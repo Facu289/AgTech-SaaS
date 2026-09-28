@@ -1,9 +1,9 @@
 import sqlite3
+import unicodedata
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, ConfigDict, Field
-
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 import database
 
 # Crea las tablas al iniciar el servidor (si ya existen, no hace nada).
@@ -38,6 +38,14 @@ class InsumoNuevo(BaseModel):
     unidad: Unidad
     cantidad: float = Field(default=0, ge=0)
 
+    @field_validator("categoria", "unidad", mode="before")
+    @classmethod
+    def normalizar(cls, valor):
+        """Pasa a minúsculas y saca tildes: 'Agroquímico' -> 'agroquimico'."""
+        if not isinstance(valor, str):
+            return valor
+        sin_tildes = unicodedata.normalize("NFKD", valor).encode("ascii", "ignore").decode()
+        return sin_tildes.strip().lower()
 
 class Insumo(InsumoNuevo):
     """Un insumo ya guardado (tiene id)."""
