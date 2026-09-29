@@ -7,8 +7,10 @@ from typing import Literal
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 import database
+import backup
 
 # Crea las tablas al iniciar el servidor (si ya existen, no hace nada).
+backup.hacer_backup(solo_si_no_hay_de_hoy=True)  # Hace backup de la base si no hay uno de hoy.
 database.crear_tablas()
 
 app = FastAPI()
@@ -165,9 +167,10 @@ def comando_movimiento(tipo: str, argumento: str) -> str:
     if len(partes) < 2:
         return uso
 
+
     cantidad = leer_cantidad(partes[0])
     if cantidad is None:
-        return f"'{partes[0]}' no es una cantidad válida.\n{uso}"
+        return f"Primero va la cantidad: '{partes[0]}' no es un número.\n{uso}"
 
     # "urea - compra" -> nombre="urea", motivo="compra"
     nombre, _, motivo = partes[1].partition(" -")
@@ -177,7 +180,10 @@ def comando_movimiento(tipo: str, argumento: str) -> str:
 
     encontrados = buscar_insumos(nombre)
     if not encontrados:
-        return f"No encontré ningún insumo que coincida con '{nombre}'. Mirá /stock."
+        return (
+            f"No encontré ningún insumo que coincida con '{nombre}'. Mirá /stock.\n"
+            f"Si agregaste un motivo, separalo con ' - '. Ejemplo: /{tipo} 1 ruleman - sembradora"
+        )
     if len(encontrados) > 1:
         opciones = "\n".join(f"  • {i['nombre']}" for i in encontrados)
         return f"Encontré varios insumos con '{nombre}':\n{opciones}\nEscribí el nombre más completo."
@@ -256,3 +262,4 @@ def crear_insumo(insumo: InsumoNuevo):
 @app.get("/insumos", response_model=list[Insumo])
 def ver_insumos():
     return database.listar_insumos()
+

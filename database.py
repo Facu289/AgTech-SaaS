@@ -6,11 +6,27 @@ from pathlib import Path
 DB_PATH = Path(__file__).parent / "agroapp.db"
 
 
+class InsumoNoEncontrado(Exception):
+    """Se pidió un insumo que no existe."""
+
+
+class StockInsuficiente(Exception):
+    """Se intentó sacar más de lo que hay."""
+
+    def __init__(self, disponible):
+        super().__init__(f"Stock insuficiente: hay {disponible}")
+        self.disponible = disponible
+
+
 @contextmanager
 def conectar():
-    """Abre la base, guarda los cambios si todo salió bien y SIEMPRE la cierra."""
+    """Abre la base, guarda los cambios si todo salió bien y SIEMPRE la cierra.
+
+    Si ocurre un error en el medio, NO se hace commit: ningún cambio queda a medias.
+    """
     conexion = sqlite3.connect(DB_PATH)
     conexion.row_factory = sqlite3.Row  # Permite leer columnas por nombre.
+    conexion.execute("PRAGMA foreign_keys = ON")  # Hace respetar las relaciones.
     try:
         yield conexion
         conexion.commit()
@@ -43,20 +59,57 @@ def crear_tablas():
             )
             """
         )
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS movimientos (
+                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                insumo_id INTEGER NOT NULL REFERENCES insumos(id),
+                tipo      TEXT    NOT NULL CHECK (tipo IN ('entrada', 'salida')),
+                cantidad  REAL    NOT NULL CHECK (cantidad > 0),
+                motivo    TEXT    NOT NULL DEFAULT '',
+                fecha     TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+            )
+            """
+        )
+        # Una sola vez: a los insumos cargados ANTES de existir esta tabla
+        # les registramos su cantidad actual como "stock inicial".
+        conexion.execute(
+            """
+            INSERT INTO movimientos (insumo_id, tipo, cantidad, motivo)
+            SELECT id, 'entrada', cantidad, 'stock inicial'
+            FROM insumos
+            WHERE cantidad > 0
+              AND id NOT IN (SELECT insumo_id FROM movimientos)
+            """
+        )
 
+
+# ---------- Insumos ----------
 
 def agregar_insumo(nombre, categoria, unidad, cantidad):
-    """Guarda un insumo nuevo y lo devuelve como diccionario."""
+    """Guarda un insumo nuevo (y su stock inicial) y lo devuelve como diccionario."""
     with conectar() as conexion:
         cursor = conexion.execute(
             "INSERT INTO insumos (nombre, categoria, unidad, cantidad) VALUES (?, ?, ?, ?)",
             (nombre, categoria, unidad, cantidad),
         )
-        fila = conexion.execute(
-            "SELECT id, nombre, categoria, unidad, cantidad FROM insumos WHERE id = ?",
-            (cursor.lastrowid,),
-        ).fetchone()
-        return dict(fila)
+        insumo_id = cursor.lastrowid
+        if cantidad > 0:
+            conexion.execute(
+                "INSERT INTO movimientos (insumo_id, tipo, cantidad, motivo) "
+                "VALUES (?, 'entrada', ?, 'stock inicial')",
+                (insumo_id, cantidad),
+            )
+        return _obtener_insumo(conexion, insumo_id)
+
+
+def _obtener_insumo(conexion, insumo_id):
+    """Busca un insumo por id usando una conexión ya abierta. Devuelve dict o None."""
+    fila = conexion.execute(
+        "SELECT id, nombre, categoria, unidad, cantidad FROM insumos WHERE id = ?",
+        (insumo_id,),
+    ).fetchone()
+    return dict(fila) if fila else None
 
 
 def listar_insumos():
@@ -67,6 +120,50 @@ def listar_insumos():
         ).fetchall()
         return [dict(fila) for fila in filas]
 
+
+# ---------- Movimientos de stock ----------
+
+def registrar_movimiento(insumo_id, tipo, cantidad, motivo=""):
+    """Registra una entrada o salida y actualiza el stock, TODO JUNTO.
+
+    Devuelve el insumo con la cantidad actualizada.
+    Lanza InsumoNoEncontrado o StockInsuficiente si no se puede.
+    """
+    with conectar() as conexion:
+        insumo = _obtener_insumo(conexion, insumo_id)
+        if insumo is None:
+            raise InsumoNoEncontrado()
+
+        if tipo == "entrada":
+            nueva_cantidad = insumo["cantidad"] + cantidad
+        else:
+            nueva_cantidad = insumo["cantidad"] - cantidad
+            if nueva_cantidad < 0:
+                raise StockInsuficiente(insumo["cantidad"])
+
+        conexion.execute(
+            "INSERT INTO movimientos (insumo_id, tipo, cantidad, motivo) VALUES (?, ?, ?, ?)",
+            (insumo_id, tipo, cantidad, motivo),
+        )
+        conexion.execute(
+            "UPDATE insumos SET cantidad = ? WHERE id = ?",
+            (nueva_cantidad, insumo_id),
+        )
+        return _obtener_insumo(conexion, insumo_id)
+
+
+def listar_movimientos(insumo_id):
+    """Devuelve el historial de movimientos de un insumo, del más nuevo al más viejo."""
+    with conectar() as conexion:
+        filas = conexion.execute(
+            "SELECT id, insumo_id, tipo, cantidad, motivo, fecha FROM movimientos "
+            "WHERE insumo_id = ? ORDER BY id DESC",
+            (insumo_id,),
+        ).fetchall()
+        return [dict(fila) for fila in filas]
+
+
+# ---------- Notas ----------
 
 def agregar_nota(texto):
     """Guarda una nota nueva y devuelve su id."""
