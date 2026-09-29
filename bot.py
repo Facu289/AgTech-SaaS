@@ -12,6 +12,23 @@ BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 if not TOKEN:
     raise SystemExit("Falta TELEGRAM_TOKEN en el archivo .env")
 
+
+def leer_usuarios_autorizados():
+    """Lee TELEGRAM_USUARIOS_AUTORIZADOS=123,456 del .env y devuelve {123, 456}."""
+    valor = os.getenv("TELEGRAM_USUARIOS_AUTORIZADOS", "")
+    usuarios = set()
+    for parte in valor.split(","):
+        parte = parte.strip()
+        if not parte:
+            continue
+        if not parte.isdigit():
+            raise SystemExit(f"ID inválido en TELEGRAM_USUARIOS_AUTORIZADOS: '{parte}'")
+        usuarios.add(int(parte))
+    return usuarios
+
+
+USUARIOS_AUTORIZADOS = leer_usuarios_autorizados()
+
 # Todas las llamadas a Telegram empiezan con esta dirección.
 API_URL = f"https://api.telegram.org/bot{TOKEN}"
 
@@ -58,6 +75,9 @@ def pedir_respuesta_al_backend(texto):
 
 def main():
     print(f"Bot iniciado. Backend: {BACKEND_URL}. Esperando mensajes... (Ctrl+C para detener)")
+    if not USUARIOS_AUTORIZADOS:
+        print("⚠️ No hay usuarios autorizados: el bot va a rechazar a todos.")
+
     offset = None
 
     while True:
@@ -69,13 +89,20 @@ def main():
                 offset = update["update_id"] + 1
 
                 mensaje = update.get("message")
-                if not mensaje or "text" not in mensaje:
+                if not mensaje or "text" not in mensaje or "from" not in mensaje:
                     continue  # Ignoramos fotos, stickers, etc. por ahora.
 
                 chat_id = mensaje["chat"]["id"]
+                usuario_id = mensaje["from"]["id"]
                 texto = mensaje["text"]
-                print(f"Mensaje recibido de {chat_id}: {texto}")
 
+                # Seguridad: solo los usuarios autorizados llegan al backend.
+                if usuario_id not in USUARIOS_AUTORIZADOS:
+                    print(f"⛔ Rechazado usuario {usuario_id}: {texto}")
+                    enviar_mensaje(chat_id, f"⛔ No estás autorizado. Tu ID de usuario es {usuario_id}.")
+                    continue
+
+                print(f"Mensaje de {usuario_id}: {texto}")
                 respuesta = pedir_respuesta_al_backend(texto)
                 enviar_mensaje(chat_id, respuesta)
 

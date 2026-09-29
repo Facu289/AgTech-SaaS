@@ -33,6 +33,16 @@ def crear_tablas():
             )
             """
         )
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS notas (
+                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                texto     TEXT    NOT NULL,
+                hecha     INTEGER NOT NULL DEFAULT 0 CHECK (hecha IN (0, 1)),
+                creada_en TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+            )
+            """
+        )
 
 
 def agregar_insumo(nombre, categoria, unidad, cantidad):
@@ -56,3 +66,28 @@ def listar_insumos():
             "SELECT id, nombre, categoria, unidad, cantidad FROM insumos ORDER BY categoria, nombre"
         ).fetchall()
         return [dict(fila) for fila in filas]
+
+
+def agregar_nota(texto):
+    """Guarda una nota nueva y devuelve su id."""
+    with conectar() as conexion:
+        cursor = conexion.execute("INSERT INTO notas (texto) VALUES (?)", (texto,))
+        return cursor.lastrowid
+
+
+def listar_notas_pendientes():
+    """Devuelve las notas que todavía no se marcaron como hechas."""
+    with conectar() as conexion:
+        filas = conexion.execute(
+            "SELECT id, texto, creada_en FROM notas WHERE hecha = 0 ORDER BY id"
+        ).fetchall()
+        return [dict(fila) for fila in filas]
+
+
+def marcar_nota_hecha(nota_id):
+    """Marca una nota como hecha. Devuelve True si existía y estaba pendiente."""
+    with conectar() as conexion:
+        cursor = conexion.execute(
+            "UPDATE notas SET hecha = 1 WHERE id = ? AND hecha = 0", (nota_id,)
+        )
+        return cursor.rowcount == 1
