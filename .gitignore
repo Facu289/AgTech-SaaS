@@ -2,4 +2,5 @@
 .env
 __pycache__/
 Tareas.md
-*.db 
+*.db
+.pytest_cache/

@@ -1,0 +1,11 @@
+# Copiá lo que necesites a tu archivo ".env" y completá tus datos. El .env NO se sube a Git.
+
+# Bot de Telegram (lo da @BotFather)
+TELEGRAM_TOKEN=
+# Ids de Telegram que pueden usar el bot, separados por coma
+TELEGRAM_USUARIOS_AUTORIZADOS=
+
+# Lenguaje natural (opcional). Clave gratis en https://aistudio.google.com -> "Get API key"
+GEMINI_API_KEY=
+# Modelo de Gemini (opcional). Si Google lo da de baja, cambialo acá.
+GEMINI_MODEL=gemini-3.5-flash-lite

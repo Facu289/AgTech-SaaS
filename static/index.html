@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inicio · AgroApp</title>
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body data-pagina="inicio">
+  <main>
+    <div class="seccion-encabezado">
+      <div>
+        <h1 id="saludo">Hola</h1>
+        <p class="subtitulo" id="fecha-hoy"></p>
+      </div>
+      <div class="acciones">
+        <a class="boton boton-secundario" href="/exportar/completo" id="boton-todo" data-icono="descarga"
+           title="Un Excel con todas las tablas, una hoja por tabla">Descargar todo (Excel)</a>
+      </div>
+    </div>
+
+    <!-- Números principales: cada uno lleva a su sección -->
+    <div class="resumen" id="resumen"></div>
+
+    <div class="inicio-grilla">
+      <!-- Lo que requiere atención -->
+      <section class="tarjeta" aria-labelledby="t-atencion">
+        <div class="seccion-encabezado">
+          <div class="tarjeta-titulo">
+            <div class="icono-caja" data-icono="alerta"></div>
+            <h2 id="t-atencion">Requiere atención</h2>
+          </div>
+          <span class="suave chico" id="estado">Cargando…</span>
+        </div>
+        <ul class="lista-atencion" id="lista-atencion"></ul>
+      </section>
+
+      <div style="display:flex;flex-direction:column;gap:24px">
+        <section class="tarjeta" aria-labelledby="t-accesos">
+          <div class="tarjeta-titulo">
+            <div class="icono-caja" data-icono="flechas"></div>
+            <h2 id="t-accesos">Accesos rápidos</h2>
+          </div>
+          <div class="accesos">
+            <a class="acceso" href="insumos.html#form-movimiento" data-icono="flechas">Entrada / salida de stock</a>
+            <a class="acceso" href="insumos.html#form-nuevo" data-icono="mas">Nuevo insumo</a>
+            <a class="acceso" href="maquinas.html" data-icono="llave">Registrar service</a>
+            <a class="acceso" href="animales.html#form-evento" data-icono="vaca">Evento de un animal</a>
+            <a class="acceso" href="vencimientos.html" data-icono="calendario">Vencimientos</a>
+            <a class="acceso" href="movimientos.html" data-icono="lista">Historial de stock</a>
+          </div>
+        </section>
+
+        <section class="tarjeta" aria-labelledby="t-ultimos">
+          <div class="seccion-encabezado">
+            <div class="tarjeta-titulo">
+              <div class="icono-caja" data-icono="historial"></div>
+              <h2 id="t-ultimos">Últimos movimientos</h2>
+            </div>
+            <a class="chico fuerte" href="movimientos.html">Ver todos</a>
+          </div>
+          <ul class="lista-atencion" id="ultimos-movimientos"></ul>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="comun.js"></script>
+  <script src="inicio.js"></script>
+</body>
+</html>

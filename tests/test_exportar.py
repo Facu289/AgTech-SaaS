@@ -1,0 +1,46 @@
+"""Tests de la exportación a Excel."""
+from datetime import datetime
+from io import BytesIO
+
+from openpyxl import load_workbook
+
+
+def abrir(respuesta):
+    assert respuesta.status_code == 200, respuesta.text
+    assert respuesta.headers["content-type"].startswith("application/vnd.openxmlformats")
+    assert "attachment" in respuesta.headers["content-disposition"]
+    return load_workbook(BytesIO(respuesta.content))
+
+
+def test_exportar_lo_que_se_ve(cliente):
+    r = cliente.post("/exportar", json={
+        "nombre": "stock insumos", "titulo": "Stock",
+        "columnas": ["Insumo", "Cantidad", "Fecha", "Hora"],
+        "filas": [["Urea", 1500.5, "2026-03-15", "2026-03-15 10:30:00"], ["Gasoil", 20, None, None]],
+    })
+    assert 'filename="stock_insumos_' in r.headers["content-disposition"]
+    hoja = abrir(r)["Stock"]
+    assert [c.value for c in hoja[1]] == ["Insumo", "Cantidad", "Fecha", "Hora"]
+    assert hoja["B2"].value == 1500.5
+    assert hoja["C2"].value == datetime(2026, 3, 15)  # Fecha de verdad, no texto.
+    assert hoja["C2"].number_format == "DD/MM/YYYY"
+    assert hoja.freeze_panes == "A2"
+
+
+def test_exportar_todo(cliente, bot):
+    bot("/nuevo glifosato herbicida litros")
+    bot("/entrada 20 glifosato - compra")
+    cliente.post("/maquinas", json={"nombre": "JD", "tipo": "tractor"})
+    cliente.post("/animales", json={"caravana": "1234", "categoria": "vaca"})
+    libro = abrir(cliente.get("/exportar/completo"))
+    assert libro.sheetnames == ["Insumos", "Movimientos", "Máquinas", "Services y arreglos", "Service programado",
+                                "Trabajos", "Vencimientos", "Contactos", "Animales", "Eventos de animales"]
+    insumos = libro["Insumos"]
+    assert [c.value for c in insumos[2]][:4] == ["glifosato", "Agroquímico", "Herbicida", 20]
+    assert libro["Movimientos"]["F2"].value == "compra"
+    assert libro["Animales"]["A2"].value == "1234"
+
+
+def test_exportar_rechaza_datos_raros(cliente):
+    r = cliente.post("/exportar", json={"columnas": [], "filas": []})
+    assert r.status_code == 422

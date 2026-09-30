@@ -1,220 +1,225 @@
-import math
-import re
+"""Punto de entrada: arma la API, reparte los comandos de Telegram y sirve la web.
+
+La lógica de cada área está en su propio archivo:
+  insumos.py    -> insumos, movimientos y notas
+  maquinaria.py -> máquinas, services, trabajos, vencimientos y contactos
+  ganaderia.py  -> animales y sus eventos
+"""
 import sqlite3
-import unicodedata
-from typing import Literal
+from pathlib import Path
+from typing import Optional
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-import database
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
 import backup
+import database
+import db_ganaderia
+import db_maquinaria
+import exportar
+import ganaderia
+import insumos
+import lenguaje_natural
+import maquinaria
+import opciones
+from utilidades import dias_hasta, formatear_cantidad
 
-# Crea las tablas al iniciar el servidor (si ya existen, no hace nada).
-backup.hacer_backup(solo_si_no_hay_de_hoy=True)  # Hace backup de la base si no hay uno de hoy.
+# Al iniciar: primero un backup, después las tablas y migraciones.
+# Si hay migraciones pendientes (la estructura de la base va a cambiar),
+# SIEMPRE hacemos un backup antes, aunque ya haya uno de hoy.
+if database.migraciones_pendientes():
+    ruta = backup.hacer_backup()
+    print(f"Backup antes de actualizar la base: {ruta.name if ruta else '(base nueva)'}")
+else:
+    backup.hacer_backup(solo_si_no_hay_de_hoy=True)
 database.crear_tablas()
 
-app = FastAPI()
-
-# Valores permitidos. Para agregar uno nuevo, sumalo a la lista.
-Categoria = Literal[
-    "agroquimico", "semilla", "fertilizante", "combustible",
-    "repuesto", "balanceado", "medicamento", "otro",
-]
-Unidad = Literal["kg", "litros", "bolsas", "unidades"]
+app = FastAPI(title="AgroApp")
+app.include_router(insumos.router)
+app.include_router(maquinaria.router)
+app.include_router(ganaderia.router)
+app.include_router(exportar.router)
 
 
-# ---------- Modelos de datos ----------
+# ---------- Errores ----------
+# Los archivos db_*.py lanzan excepciones propias (no saben nada de HTTP).
+# Acá las traducimos a respuestas HTTP UNA sola vez, para todos los endpoints.
+
+NO_ENCONTRADO = {
+    database.InsumoNoEncontrado: "No existe ese insumo.",
+    db_maquinaria.MaquinaNoEncontrada: "No existe esa máquina.",
+    db_ganaderia.AnimalNoEncontrado: "No existe ese animal.",
+}
+
+
+def _error(codigo: int, mensaje: str):
+    return JSONResponse(status_code=codigo, content={"detail": mensaje})
+
+
+@app.exception_handler(database.NoEncontrado)
+def error_no_encontrado(request: Request, error: database.NoEncontrado):
+    return _error(404, str(error) or NO_ENCONTRADO.get(type(error), "No existe (puede que ya se haya borrado)."))
+
+
+@app.exception_handler(database.TieneHistorial)
+def error_tiene_historial(request: Request, error):
+    return _error(409, "Tiene historial, así que no se puede eliminar: archivalo o dalo de baja.")
+
+
+@app.exception_handler(database.Archivado)
+def error_archivado(request: Request, error):
+    return _error(409, "Está archivado o dado de baja: reactivalo para poder usarlo.")
+
+
+@app.exception_handler(database.StockInsuficiente)
+def error_stock(request: Request, error: database.StockInsuficiente):
+    return _error(400, f"Stock insuficiente: hay {formatear_cantidad(error.disponible)}")
+
+
+@app.exception_handler(db_ganaderia.EventoInvalido)
+def error_evento(request: Request, error):
+    return _error(400, str(error))
+
+
+@app.exception_handler(sqlite3.IntegrityError)
+def error_integridad(request: Request, error):
+    """Última red de seguridad: la base rechazó el dato (nombre repetido, relación inválida...)."""
+    if "UNIQUE" in str(error):
+        return _error(409, "Ya existe un registro con ese nombre.")
+    return _error(400, "La base de datos rechazó el dato (revisá que lo elegido exista).")
+
+
+# ---------- Endpoints generales ----------
+
+@app.get("/")
+def inicio():
+    return RedirectResponse("/web/")
+
+
+@app.get("/opciones")
+def ver_opciones():
+    """Todas las listas de valores permitidos (la web las usa para los desplegables)."""
+    return opciones.todas()
+
+
+@app.get("/alertas")
+def ver_alertas():
+    """Lo que requiere atención: stock bajo, vencimientos y partos próximos."""
+    return {
+        "stock_bajo": insumos.insumos_con_stock_bajo(),
+        "vencimientos": [
+            {**v, "dias": dias_hasta(v["fecha_vencimiento"])} for v in maquinaria.vencimientos_para_alertar()
+        ],
+        "partos": [
+            {**a, "dias": dias_hasta(a["fecha_probable_parto"])} for a in ganaderia.partos_para_alertar()
+        ],
+        "services": db_maquinaria.services_para_alertar(),
+    }
+
+
+# ---------- Telegram ----------
 
 class MensajeEntrada(BaseModel):
     texto: str
+    usuario: Optional[int] = None  # Id de Telegram de quien escribe (para confirmar con "sí").
 
 
 class MensajeSalida(BaseModel):
     respuesta: str
 
 
-class InsumoNuevo(BaseModel):
-    """Lo que hay que mandar para crear un insumo."""
-    model_config = ConfigDict(str_strip_whitespace=True)
-
-    nombre: str = Field(min_length=1, max_length=100)
-    categoria: Categoria
-    unidad: Unidad
-    cantidad: float = Field(default=0, ge=0)
-
-    @field_validator("categoria", "unidad", mode="before")
-    @classmethod
-    def normalizar(cls, valor):
-        """Pasa a minúsculas y saca tildes: 'Agroquímico' -> 'agroquimico'."""
-        if not isinstance(valor, str):
-            return valor
-        return normalizar_texto(valor)
-
-class Insumo(InsumoNuevo):
-    """Un insumo ya guardado (tiene id)."""
-    id: int
-
-# ---------- Funciones de ayuda ----------
-
-def normalizar_texto(valor: str) -> str:
-    """Pasa a minúsculas y saca tildes: ' Agroquímico ' -> 'agroquimico'."""
-    sin_tildes = unicodedata.normalize("NFKD", valor).encode("ascii", "ignore").decode()
-    return sin_tildes.strip().lower()
-
-
-def leer_cantidad(texto: str):
-    """Convierte lo que escribe el usuario en número. Devuelve None si no es válido.
-
-    Acepta: 20 | 2.5 | 2,5 | 1.500 (mil quinientos) | 1.500,5
-    """
-    texto = texto.strip()
-    if "," in texto:
-        # Formato argentino: el punto separa miles y la coma los decimales.
-        texto = texto.replace(".", "").replace(",", ".")
-    elif re.fullmatch(r"\d{1,3}(\.\d{3})+", texto):
-        # "1.500" o "12.000": los puntos son separadores de miles.
-        texto = texto.replace(".", "")
-    try:
-        cantidad = float(texto)
-    except ValueError:
-        return None
-    if not math.isfinite(cantidad) or cantidad <= 0:
-        return None
-    return cantidad
-
-# ---------- Lógica del bot ----------
-
-EMOJIS_CATEGORIA = {
-    "agroquimico": "🧪", "semilla": "🌱", "fertilizante": "🧂", "combustible": "⛽",
-    "repuesto": "🔧", "balanceado": "🌾", "medicamento": "💉", "otro": "📦",
-}
-
-
-def formatear_cantidad(cantidad: float):
-    """1500.0 -> 1500 | 2.5 -> 2.5 (saca el .0 cuando no hace falta)."""
-    return int(cantidad) if cantidad.is_integer() else round(cantidad, 2)
-
-
-def texto_stock() -> str:
-    """Arma el mensaje de stock agrupado por categoría."""
-    insumos = database.listar_insumos()  # Ya vienen ordenados por categoría.
-    if not insumos:
-        return "No hay insumos cargados todavía."
-
-    lineas = ["📋 Stock de insumos"]
-    categoria_actual = None
-    for insumo in insumos:
-        if insumo["categoria"] != categoria_actual:
-            categoria_actual = insumo["categoria"]
-            emoji = EMOJIS_CATEGORIA.get(categoria_actual, "📦")
-            lineas.append(f"\n{emoji} {categoria_actual.capitalize()}")
-        cantidad = formatear_cantidad(insumo["cantidad"])
-        lineas.append(f"  • {insumo['nombre']}: {cantidad} {insumo['unidad']}")
+def comando_alertas(argumento: str) -> str:
+    alertas = ver_alertas()
+    lineas = ["🔔 Alertas"]
+    if alertas["stock_bajo"]:
+        lineas.append("\n📦 Stock bajo")
+        for i in alertas["stock_bajo"]:
+            lineas.append(
+                f"  • {i['nombre']}: {formatear_cantidad(i['cantidad'])} {i['unidad']} "
+                f"(mínimo {formatear_cantidad(i['stock_minimo'])})"
+            )
+    if alertas["vencimientos"]:
+        lineas.append("\n📅 Vencimientos")
+        lineas += ["  " + maquinaria._linea_vencimiento(v) for v in alertas["vencimientos"]]
+    if alertas["services"]:
+        lineas.append("\n🔧 Services")
+        lineas += [f"  {p['maquina_nombre']}: " + maquinaria._describir_plan(p) for p in alertas["services"]]
+    if alertas["partos"]:
+        lineas.append("\n🍼 Partos")
+        lineas += ["  " + linea for linea in ganaderia.lineas_partos(alertas["partos"])]
+    if len(lineas) == 1:
+        return "🔔 No hay alertas. Todo en orden. 👌"
     return "\n".join(lineas)
 
 
-def texto_notas() -> str:
-    """Arma el mensaje con las notas pendientes."""
-    notas = database.listar_notas_pendientes()
-    if not notas:
-        return "No hay notas pendientes. 🎉"
+AYUDA = """Comandos de AgroApp
 
-    lineas = ["📝 Notas pendientes"]
-    for nota in notas:
-        fecha = datetime.strptime(nota["creada_en"], "%Y-%m-%d %H:%M:%S")
-        lineas.append(f"#{nota['id']} ({fecha:%d/%m %H:%M}) {nota['texto']}")
-    lineas.append("\nPara cerrar una: /hecha <número>")
-    return "\n".join(lineas)
+📦 Stock
+/stock [filtro] - ver stock (ej: /stock herbicida)
+/repuestos [filtro] - ver repuestos
+/nuevo <nombre> <categoría o tipo> <unidad>
+/entrada <cantidad> <insumo> - motivo
+/salida <cantidad> <insumo> - motivo
 
+🚜 Maquinaria
+/maquinas [filtro] - horas y últimos services
+/horas <máquina> <horas> - actualizar horómetro
+/trabajo <máquina> <ha> <tipo> - lote
+/service <máquina> - descripción
+/arreglo <máquina> - descripción
+/services [máquina] - service programado
+/vencimientos - seguros, licencias, VTV...
 
-def comando_nota(argumento: str) -> str:
-    if not argumento:
-        return "Escribí la nota después del comando.\nEjemplo: /nota comprar 20 bolsas de urea"
-    nota_id = database.agregar_nota(argumento)
-    return f"📝 Nota #{nota_id} guardada."
+🐄 Animales
+/animales [filtro] - resumen o lista
+/animal <caravana> - ficha
+/parto <caravana> <crías: m/h> - detalle
+/tacto <caravana> <preñada|vacía> [fecha parto]
+/servicio <caravana> - toro o IA
+/aborto <caravana> - detalle
 
-
-def comando_hecha(argumento: str) -> str:
-    if not argumento.isdigit():
-        return "Indicá el número de la nota.\nEjemplo: /hecha 3"
-    nota_id = int(argumento)
-    if database.marcar_nota_hecha(nota_id):
-        return f"✅ Nota #{nota_id} marcada como hecha."
-    return f"No encontré una nota pendiente con el número {nota_id}."
-
-
-def buscar_insumos(texto: str) -> list:
-    """Busca insumos por nombre sin importar mayúsculas ni tildes.
-
-    Si hay uno con el nombre exacto, devuelve solo ese.
-    Si no, devuelve todos los que CONTIENEN el texto ("glifo" -> "Glifosato").
-    """
-    buscado = normalizar_texto(texto)
-    insumos = database.listar_insumos()
-    exactos = [i for i in insumos if normalizar_texto(i["nombre"]) == buscado]
-    if exactos:
-        return exactos
-    return [i for i in insumos if buscado in normalizar_texto(i["nombre"])]
-
-
-def comando_movimiento(tipo: str, argumento: str) -> str:
-    """Maneja /entrada y /salida. Formato: <cantidad> <insumo> [- motivo]"""
-    uso = (
-        f"Formato: /{tipo} <cantidad> <insumo> - <motivo opcional>\n"
-        f"Ejemplo: /{tipo} 20 urea - compra"
-    )
-    partes = argumento.split(maxsplit=1)
-    if len(partes) < 2:
-        return uso
-
-
-    cantidad = leer_cantidad(partes[0])
-    if cantidad is None:
-        return f"Primero va la cantidad: '{partes[0]}' no es un número.\n{uso}"
-
-    # "urea - compra" -> nombre="urea", motivo="compra"
-    nombre, _, motivo = partes[1].partition(" -")
-    nombre, motivo = nombre.strip(), motivo.strip() or "Telegram"
-    if not nombre:
-        return uso
-
-    encontrados = buscar_insumos(nombre)
-    if not encontrados:
-        return (
-            f"No encontré ningún insumo que coincida con '{nombre}'. Mirá /stock.\n"
-            f"Si agregaste un motivo, separalo con ' - '. Ejemplo: /{tipo} 1 ruleman - sembradora"
-        )
-    if len(encontrados) > 1:
-        opciones = "\n".join(f"  • {i['nombre']}" for i in encontrados)
-        return f"Encontré varios insumos con '{nombre}':\n{opciones}\nEscribí el nombre más completo."
-
-    insumo = encontrados[0]
-    try:
-        actualizado = database.registrar_movimiento(insumo["id"], tipo, cantidad, motivo)
-    except database.StockInsuficiente as error:
-        disponible = formatear_cantidad(error.disponible)
-        return f"⚠️ No alcanza el stock de {insumo['nombre']}: hay {disponible} {insumo['unidad']}."
-
-    signo = "+" if tipo == "entrada" else "-"
-    return (
-        f"✅ {tipo.capitalize()} registrada: {signo}{formatear_cantidad(cantidad)} "
-        f"{insumo['unidad']} de {insumo['nombre']} ({motivo})\n"
-        f"Stock actual: {formatear_cantidad(actualizado['cantidad'])} {insumo['unidad']}"
-    )
-
-
-AYUDA = """Comandos:
-/stock - ver el stock de insumos
-/entrada <cantidad> <insumo> - sumar stock
-/salida <cantidad> <insumo> - restar stock
-(opcional: agregá " - motivo" al final)
-/nota <texto> - guardar una nota
-/notas - ver notas pendientes
-/hecha <número> - marcar una nota como hecha
+📝 Otros
+/alertas - todo lo que requiere atención
+💬 También podés escribir normal: "gasté 20 litros de glifosato en el lote 4"
+/nota <texto> · /notas · /hecha <n>
 /ayuda - esta ayuda"""
 
-def generar_respuesta(texto: str) -> str:
-    """El 'cerebro' de la app: decide qué contestar a cada mensaje."""
+# Qué función responde cada comando. Todas reciben el texto después del comando.
+COMANDOS = {
+    "/start": lambda _: "¡Hola! Soy el bot de AgroApp 🌱. Escribí /ayuda para ver qué sé hacer.",
+    "/ayuda": lambda _: AYUDA,
+    "/stock": insumos.comando_stock,
+    "/repuestos": insumos.comando_repuestos,
+    "/nuevo": insumos.comando_nuevo,
+    "/entrada": lambda arg: insumos.comando_movimiento("entrada", arg),
+    "/salida": lambda arg: insumos.comando_movimiento("salida", arg),
+    "/nota": insumos.comando_nota,
+    "/notas": insumos.comando_notas,
+    "/hecha": insumos.comando_hecha,
+    "/maquinas": maquinaria.comando_maquinas,
+    "/horas": maquinaria.comando_horas,
+    "/trabajo": maquinaria.comando_trabajo,
+    "/service": lambda arg: maquinaria.comando_mantenimiento("service", arg),
+    "/arreglo": lambda arg: maquinaria.comando_mantenimiento("arreglo", arg),
+    "/vencimientos": maquinaria.comando_vencimientos,
+    "/services": maquinaria.comando_services,
+    "/animales": ganaderia.comando_animales,
+    "/animal": ganaderia.comando_animal,
+    "/parto": ganaderia.comando_parto,
+    "/aborto": ganaderia.comando_aborto,
+    "/tacto": ganaderia.comando_tacto,
+    "/servicio": ganaderia.comando_servicio,
+    "/alertas": comando_alertas,
+}
+
+# Telegram no acepta mensajes de más de 4096 caracteres.
+LARGO_MAXIMO = 4000
+
+
+def ejecutar_comando(texto: str) -> str:
+    """Corre UN comando ("/stock herbicida") y devuelve la respuesta."""
     texto = texto.strip()
 
     # Separa "/nota comprar urea" en comando="/nota" y argumento="comprar urea".
@@ -222,44 +227,40 @@ def generar_respuesta(texto: str) -> str:
     comando = partes[0].lower().split("@")[0] if partes else ""  # "/Stock@mi_bot" -> "/stock"
     argumento = partes[1].strip() if len(partes) > 1 else ""
 
-    if comando == "/start":
-        return "¡Hola! Soy el bot de AgroApp 🌱. Escribí /ayuda para ver qué sé hacer."
-    if comando == "/ayuda":
-        return AYUDA
-    if comando == "/stock":
-        return texto_stock()
-    if comando in ("/entrada", "/salida"):
-        return comando_movimiento(comando[1:], argumento)
-    if comando == "/nota":
-        return comando_nota(argumento)
-    if comando == "/notas":
-        return texto_notas()
-    if comando == "/hecha":
-        return comando_hecha(argumento)
-    return f"No entendí '{texto}'. Escribí /ayuda para ver los comandos."
-# ---------- Endpoints ----------
+    funcion = COMANDOS.get(comando)
+    if funcion is None:
+        return f"No entendí '{texto}'. Escribí /ayuda para ver los comandos."
+    return funcion(argumento)
 
-@app.get("/")
-def inicio():
-    return {"mensaje": "Hola, la API de AgroApp está funcionando"}
+
+def generar_respuesta(texto: str, usuario: Optional[int] = None) -> str:
+    """El 'cerebro' del bot: decide qué contestar a cada mensaje.
+
+    - Si empieza con "/", es un comando.
+    - Si no (o es /si, /no), es lenguaje natural: lo interpreta Gemini.
+    """
+    texto = texto.strip()
+    primera = texto.split(maxsplit=1)[0].lower().split("@")[0] if texto else ""
+    if texto.startswith("/") and primera not in ("/si", "/no"):
+        respuesta = ejecutar_comando(texto)
+    elif not texto:
+        respuesta = "Escribí /ayuda para ver qué sé hacer."
+    else:
+        texto_natural = primera[1:] if primera in ("/si", "/no") else texto
+        respuesta = lenguaje_natural.interpretar(texto_natural, usuario or 0, AYUDA, ejecutar_comando)
+
+    if len(respuesta) > LARGO_MAXIMO:
+        respuesta = respuesta[:LARGO_MAXIMO].rsplit("\n", 1)[0] + "\n\n… (cortado: usá un filtro o mirá la web)"
+    return respuesta
 
 
 @app.post("/mensaje", response_model=MensajeSalida)
 def procesar_mensaje(mensaje: MensajeEntrada):
-    return MensajeSalida(respuesta=generar_respuesta(mensaje.texto))
+    return MensajeSalida(respuesta=generar_respuesta(mensaje.texto, mensaje.usuario))
 
 
-@app.post("/insumos", response_model=Insumo, status_code=201)
-def crear_insumo(insumo: InsumoNuevo):
-    try:
-        return database.agregar_insumo(
-            insumo.nombre, insumo.categoria, insumo.unidad, insumo.cantidad
-        )
-    except sqlite3.IntegrityError:
-        raise HTTPException(status_code=409, detail=f"Ya existe un insumo llamado '{insumo.nombre}'")
-
-
-@app.get("/insumos", response_model=list[Insumo])
-def ver_insumos():
-    return database.listar_insumos()
-
+# ---------- Web ----------
+# Sirve los archivos de la carpeta "static" en http://127.0.0.1:8000/web/
+# (va al final para que no tape ningún endpoint de la API).
+CARPETA_WEB = Path(__file__).parent / "static"
+app.mount("/web", StaticFiles(directory=CARPETA_WEB, html=True), name="web")

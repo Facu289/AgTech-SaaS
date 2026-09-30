@@ -2,3 +2,7 @@ fastapi
 uvicorn
 requests
 python-dotenv
+openpyxl
+# Para correr los tests (python -m pytest):
+pytest
+httpx

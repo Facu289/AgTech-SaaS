@@ -58,13 +58,17 @@ def enviar_mensaje(chat_id, texto):
     respuesta.raise_for_status()
 
 
-def pedir_respuesta_al_backend(texto):
-    """Le manda el texto a nuestra API FastAPI y devuelve lo que contesta."""
+def pedir_respuesta_al_backend(texto, usuario_id):
+    """Le manda el texto a nuestra API FastAPI y devuelve lo que contesta.
+
+    Mandamos también quién escribe: si el mensaje es en lenguaje natural,
+    el backend guarda lo que entendió hasta que ESE usuario responda "sí".
+    """
     try:
         respuesta = requests.post(
             f"{BACKEND_URL}/mensaje",
-            json={"texto": texto},
-            timeout=10,
+            json={"texto": texto, "usuario": usuario_id},
+            timeout=45,  # Gemini puede tardar unos segundos en contestar.
         )
         respuesta.raise_for_status()
         return respuesta.json()["respuesta"]
@@ -103,7 +107,7 @@ def main():
                     continue
 
                 print(f"Mensaje de {usuario_id}: {texto}")
-                respuesta = pedir_respuesta_al_backend(texto)
+                respuesta = pedir_respuesta_al_backend(texto, usuario_id)
                 enviar_mensaje(chat_id, respuesta)
 
         except requests.RequestException as error:
@@ -113,4 +117,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main()
