@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maquinaria · AgroApp</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="maquinas">
+  <main>
+    <div class="alertas" id="alertas"></div>
+
+    <div class="seccion-encabezado">
+      <div>
+        <h1>Maquinaria</h1>
+        <p class="subtitulo" id="estado">Cargando…</p>
+      </div>
+      <div class="acciones">
+        <button class="boton boton-secundario" type="button" id="boton-actualizar" data-icono="refrescar">Actualizar</button>
+        <button class="boton" type="button" id="boton-nueva" data-icono="mas">Nueva máquina</button>
+      </div>
+    </div>
+
+    <form class="filtros" id="filtros" role="search">
+      <label class="buscador" data-icono-lupa>
+        <input name="texto" type="search" placeholder="Buscar por nombre, marca, modelo o patente…" aria-label="Buscar" autocomplete="off">
+      </label>
+      <select name="tipo" aria-label="Tipo" data-tipos-maquina-filtro></select>
+      <label class="casilla"><input type="checkbox" name="archivadas"> Ver archivadas</label>
+      <button class="boton-limpiar" type="reset">Limpiar</button>
+    </form>
+
+    <div class="contenedor-tabla">
+      <table>
+        <thead>
+          <tr>
+            <th>Máquina</th>
+            <th>Tipo</th>
+            <th class="numero">Horas motor</th>
+            <th>Service</th>
+            <th class="numero">Hectáreas</th>
+            <th>Próximo vencimiento</th>
+            <th><span hidden>Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-tabla"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Ventana para crear / editar una máquina -->
+  <dialog class="ventana" id="ventana-maquina" aria-labelledby="t-maquina">
+    <form method="dialog" id="form-maquina">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="tractor"></div>
+        <h2 id="t-maquina">Nueva máquina</h2>
+      </div>
+      <div class="campos" style="--columnas: 1fr 1fr 1fr">
+        <label class="campo" style="grid-column: span 2"><span>Nombre (cómo la llamás)</span>
+          <input name="nombre" required maxlength="60" autocomplete="off" placeholder="Ej: Tractor JD 6110"></label>
+        <label class="campo"><span>Tipo</span>
+          <select name="tipo" required data-tipos-maquina></select></label>
+        <label class="campo"><span>Marca</span>
+          <input name="marca" maxlength="60" autocomplete="off" placeholder="Ej: John Deere"></label>
+        <label class="campo"><span>Modelo</span>
+          <input name="modelo" maxlength="60" autocomplete="off" placeholder="Ej: 6110J"></label>
+        <label class="campo"><span>Año</span>
+          <input name="anio" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Ej: 2018"></label>
+        <label class="campo"><span>N° de serie</span>
+          <input name="numero_serie" maxlength="60" autocomplete="off"></label>
+        <label class="campo"><span>Patente</span>
+          <input name="patente" maxlength="20" autocomplete="off"></label>
+        <label class="campo"><span>Horas motor</span>
+          <input name="horas_motor" inputmode="decimal" autocomplete="off" placeholder="0"></label>
+        <label class="campo" data-solo-cosechadora><span>Horas de trilla</span>
+          <input name="horas_trilla" inputmode="decimal" autocomplete="off"></label>
+        <label class="campo" style="grid-column: 1 / -1"><span>Observaciones</span>
+          <textarea name="observaciones" maxlength="1000"></textarea></label>
+      </div>
+      <p class="mensaje" hidden></p>
+      <div class="ventana-pie">
+        <button class="boton boton-secundario" value="cancelar">Cancelar</button>
+        <button class="boton" type="submit" data-icono="check">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/comun.js"></script>
+  <script src="js/comun-maquinaria.js"></script>
+  <script src="js/maquinas.js"></script>
+</body>
+</html>

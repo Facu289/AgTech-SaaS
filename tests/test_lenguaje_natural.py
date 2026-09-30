@@ -7,7 +7,7 @@ import pytest
 @pytest.fixture
 def gemini(app, monkeypatch):
     """Reemplaza a Gemini por una función que devuelve lo que le digamos."""
-    import lenguaje_natural
+    from app.telegram import lenguaje_natural
     monkeypatch.setenv("GEMINI_API_KEY", "clave-de-prueba")
     estado = {"respuesta": {"comandos": [], "pregunta": ""}, "mensajes": []}
 
@@ -104,7 +104,7 @@ def test_la_api_recibe_el_usuario(cliente, gemini):
 
 
 def test_leer_respuesta_tolera_texto_alrededor():
-    from lenguaje_natural import ErrorGemini, leer_respuesta
+    from app.telegram.lenguaje_natural import ErrorGemini, leer_respuesta
     assert leer_respuesta('Claro: {"comandos": ["/stock"], "pregunta": ""} listo')["comandos"] == ["/stock"]
     with pytest.raises(ErrorGemini):
         leer_respuesta("no sé")
@@ -123,7 +123,7 @@ class RespuestaFalsa:
     (429, "límite"), (404, "modelo"), (403, "clave"), (500, "error"),
 ])
 def test_errores_de_gemini_se_explican(app, monkeypatch, codigo, esperado):
-    import lenguaje_natural
+    from app.telegram import lenguaje_natural
     monkeypatch.setenv("GEMINI_API_KEY", "x")
     monkeypatch.setattr(lenguaje_natural.requests, "post", lambda *a, **k: RespuestaFalsa(codigo, {}))
     with pytest.raises(lenguaje_natural.ErrorGemini, match=esperado):
@@ -131,7 +131,7 @@ def test_errores_de_gemini_se_explican(app, monkeypatch, codigo, esperado):
 
 
 def test_consultar_gemini_arma_bien_el_pedido(app, monkeypatch):
-    import lenguaje_natural
+    from app.telegram import lenguaje_natural
     monkeypatch.setenv("GEMINI_API_KEY", "mi-clave")
     monkeypatch.setenv("GEMINI_MODEL", "modelo-x")
     pedido = {}
@@ -148,7 +148,7 @@ def test_consultar_gemini_arma_bien_el_pedido(app, monkeypatch):
 
 
 def test_sin_internet(app, monkeypatch):
-    import lenguaje_natural
+    from app.telegram import lenguaje_natural
     monkeypatch.setenv("GEMINI_API_KEY", "x")
 
     def falla(*a, **k):

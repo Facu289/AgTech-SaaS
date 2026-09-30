@@ -20,7 +20,7 @@ def test_base_vieja_se_migra_sin_perder_datos(tmp_path, monkeypatch):
 
     monkeypatch.setenv("AGROAPP_DB", str(ruta))
     import importlib
-    import database
+    from app.nucleo import database
     importlib.reload(database)
     assert database.migraciones_pendientes() == len(database.MIGRACIONES)
 
@@ -28,6 +28,27 @@ def test_base_vieja_se_migra_sin_perder_datos(tmp_path, monkeypatch):
     database.crear_tablas()  # Dos veces: no tiene que fallar ni duplicar nada.
 
     assert database.migraciones_pendientes() == 0
-    insumo = database.listar_insumos()[0]
+    from app.insumos import db as insumos_db
+    importlib.reload(insumos_db)
+    insumo = insumos_db.listar_insumos()[0]
     assert (insumo["nombre"], insumo["cantidad"], insumo["subcategoria"]) == ("glifosato", 10, "")
-    assert len(database.listar_movimientos(1)) == 1
+    assert len(insumos_db.listar_movimientos(1)) == 1
+
+
+def test_no_arranca_con_la_base_en_el_lugar_viejo(tmp_path, monkeypatch):
+    """Si la base sigue en la raíz (sin reorganizar), NO se crea una base vacía en datos/."""
+    import importlib
+
+    import pytest
+
+    from app.nucleo import database
+    monkeypatch.delenv("AGROAPP_DB", raising=False)
+    importlib.reload(database)
+    monkeypatch.setattr(database, "CARPETA_PROYECTO", tmp_path)
+    monkeypatch.setattr(database, "DB_PATH", tmp_path / "datos" / "agroapp.db")
+    (tmp_path / "agroapp.db").write_bytes(b"")  # La base "vieja", en la raíz.
+    with pytest.raises(database.UbicacionVieja, match="reorganizar.ps1"):
+        database.verificar_ubicacion()
+    (tmp_path / "datos").mkdir()
+    (tmp_path / "datos" / "agroapp.db").write_bytes(b"")  # Ya movida: todo bien.
+    database.verificar_ubicacion()

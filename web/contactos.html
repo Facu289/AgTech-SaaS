@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contactos · AgroApp</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="contactos">
+  <main>
+    <div class="seccion-encabezado">
+      <div>
+        <h1>Contactos</h1>
+        <p class="subtitulo" id="estado">Cargando…</p>
+      </div>
+      <div class="acciones">
+        <button class="boton" type="button" id="boton-nuevo" data-icono="mas">Nuevo contacto</button>
+      </div>
+    </div>
+
+    <form class="filtros" id="filtros" role="search">
+      <label class="buscador" data-icono-lupa>
+        <input name="texto" type="search" placeholder="Buscar nombre, empresa, teléfono o notas…" aria-label="Buscar" autocomplete="off">
+      </label>
+      <select name="rubro" aria-label="Rubro" data-rubros-filtro></select>
+      <button class="boton-limpiar" type="reset">Limpiar</button>
+    </form>
+
+    <div class="contenedor-tabla">
+      <table>
+        <thead>
+          <tr><th>Nombre</th><th>Rubro</th><th>Empresa</th><th>Teléfono</th><th>Email</th><th>Notas</th><th><span hidden>Acciones</span></th></tr>
+        </thead>
+        <tbody id="cuerpo-tabla"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <dialog class="ventana" id="ventana-contacto" aria-labelledby="t-contacto">
+    <form method="dialog" id="form-contacto">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="persona"></div>
+        <h2 id="t-contacto">Nuevo contacto</h2>
+      </div>
+      <div class="campos" style="--columnas: 1fr 1fr">
+        <label class="campo"><span>Nombre</span><input name="nombre" required maxlength="100" autocomplete="off"></label>
+        <label class="campo"><span>Rubro</span><select name="rubro" required data-rubros></select></label>
+        <label class="campo"><span>Empresa</span><input name="empresa" maxlength="100" autocomplete="off"></label>
+        <label class="campo"><span>Teléfono</span><input name="telefono" type="tel" maxlength="50" autocomplete="off"></label>
+        <label class="campo" style="grid-column: 1 / -1"><span>Email</span><input name="email" type="email" maxlength="100" autocomplete="off"></label>
+        <label class="campo" style="grid-column: 1 / -1"><span>Notas</span><textarea name="notas" maxlength="1000" placeholder="Ej: atiende John Deere, tiene grúa…"></textarea></label>
+      </div>
+      <p class="mensaje" hidden></p>
+      <div class="ventana-pie">
+        <button class="boton boton-secundario" value="cancelar">Cancelar</button>
+        <button class="boton" type="submit" data-icono="check">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/comun.js"></script>
+  <script src="js/contactos.js"></script>
+</body>
+</html>
