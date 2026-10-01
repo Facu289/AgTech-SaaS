@@ -29,6 +29,7 @@ class MaquinaDatos(BaseModel):
     modelo: str = Field(default="", max_length=60)
     anio: EnteroOpcional = Field(default=None, ge=1900, le=2100)
     numero_serie: str = Field(default="", max_length=60)
+    serie_monitor: str = Field(default="", max_length=60)  # Monitor GPS / piloto: para licencias y suscripciones.
     patente: str = Field(default="", max_length=20)
     horas_motor: NumeroOCero = 0
     horas_trilla: NumeroOpcional = None  # Solo cosechadoras.

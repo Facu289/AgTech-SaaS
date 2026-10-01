@@ -71,7 +71,7 @@ def test_migracion_5_copia_la_maquina_que_ya_tenia_cada_repuesto(tmp_path, monke
         conexion.execute("INSERT INTO insumos (nombre, categoria, unidad, maquina_id) VALUES ('Filtro', 'repuesto', 'unidades', 1)")
         conexion.execute("INSERT INTO insumos (nombre, categoria, unidad) VALUES ('Grasa', 'repuesto', 'kg')")
     # 2) Se aplica la migración 5.
-    monkeypatch.setattr(database, "MIGRACIONES", todas)
+    monkeypatch.setattr(database, "MIGRACIONES", todas[:5])
     assert database.migraciones_pendientes() == 1
     database.crear_tablas()
 
@@ -79,3 +79,23 @@ def test_migracion_5_copia_la_maquina_que_ya_tenia_cada_repuesto(tmp_path, monke
     importlib.reload(insumos_db)
     por_nombre = {i["nombre"]: i["maquinas"] for i in insumos_db.listar_insumos()}
     assert por_nombre == {"Filtro": [{"id": 1, "nombre": "JD"}], "Grasa": []}
+
+
+def test_migracion_6_agrega_serie_del_monitor_sin_tocar_las_maquinas(tmp_path, monkeypatch):
+    """Las máquinas que ya existían quedan iguales, con el N° de serie del monitor vacío."""
+    import importlib
+
+    from app.nucleo import database
+    monkeypatch.setenv("AGROAPP_DB", str(tmp_path / "v5.db"))
+    importlib.reload(database)
+    todas = database.MIGRACIONES
+    monkeypatch.setattr(database, "MIGRACIONES", todas[:5])
+    database.crear_tablas()
+    with database.conectar() as conexion:
+        conexion.execute("INSERT INTO maquinas (nombre, tipo, numero_serie) VALUES ('Sembradora', 'sembradora', 'ABC1')")
+    monkeypatch.setattr(database, "MIGRACIONES", todas[:6])
+    assert database.migraciones_pendientes() == 1
+    database.crear_tablas()
+    with database.conectar() as conexion:
+        fila = conexion.execute("SELECT nombre, numero_serie, serie_monitor FROM maquinas").fetchone()
+    assert tuple(fila) == ("Sembradora", "ABC1", "")

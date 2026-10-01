@@ -36,6 +36,7 @@
 - [x] Services y arreglos (fecha, horas al momento, descripción, costo)
 - [x] Trabajos realizados: hectáreas trilladas / sembradas / aplicadas, lote, cultivo
 - [x] Vencimientos con fecha (seguros, licencias de piloto, VTV...) y alertas a 30 días
+- [x] N° de serie del monitor en la máquina; lo muestran sus licencias y suscripciones (tipo "Suscripción / app")
 - [x] Contactos: señal/GPS, repuestos, mecánicos, veterinarios...
 - [x] Páginas web: listado, ficha, vencimientos, contactos
 - [x] Telegram: /maquinas, /horas, /trabajo, /service, /arreglo, /vencimientos

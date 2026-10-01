@@ -37,6 +37,7 @@ function mostrarEncabezado(m) {
   const datos = document.getElementById("datos");
   const campos = [
     ["Marca", m.marca], ["Modelo", m.modelo], ["Año", m.anio], ["N° de serie", m.numero_serie],
+    ["N° de serie del monitor", m.serie_monitor],
     ["Patente", m.patente], ["Cargada el", formatearFecha(m.creado_en)], ["Observaciones", m.observaciones],
   ];
   // Cada par (nombre, valor) va en su propio <div>, así queda alineado en la grilla.

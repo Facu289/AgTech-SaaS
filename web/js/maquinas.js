@@ -39,7 +39,7 @@ function pasaFiltros(maquina, filtros) {
   if (!filtros.archivadas && maquina.archivado) return false;
   if (filtros.tipo && maquina.tipo !== filtros.tipo) return false;
   if (filtros.texto) {
-    const donde = normalizar(`${maquina.nombre} ${maquina.marca} ${maquina.modelo} ${maquina.patente} ${maquina.numero_serie}`);
+    const donde = normalizar(`${maquina.nombre} ${maquina.marca} ${maquina.modelo} ${maquina.patente} ${maquina.numero_serie} ${maquina.serie_monitor}`);
     if (!donde.includes(normalizar(filtros.texto))) return false;
   }
   return true;

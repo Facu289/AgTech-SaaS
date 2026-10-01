@@ -22,7 +22,7 @@ function pasaFiltros(v, filtros) {
   if (filtros.tipo && v.tipo !== filtros.tipo) return false;
   if (filtros.maquina === "general" && v.maquina_id !== null) return false;
   if (filtros.maquina && filtros.maquina !== "general" && String(v.maquina_id) !== filtros.maquina) return false;
-  if (filtros.texto && !normalizar(`${v.descripcion} ${v.observaciones} ${v.maquina_nombre || ""}`).includes(normalizar(filtros.texto))) return false;
+  if (filtros.texto && !normalizar(`${v.descripcion} ${v.observaciones} ${v.maquina_nombre || ""} ${serieMonitor(v)}`).includes(normalizar(filtros.texto))) return false;
   return true;
 }
 
@@ -78,7 +78,12 @@ function mostrarTabla() {
         celdaFechaVencimiento(v),
         el("td", {}, el("div", { className: "fuerte" }, v.descripcion), v.observaciones ? el("div", { className: "suave chico" }, v.observaciones) : null),
         el("td", {}, pillDeOpcion(opciones.tipos_vencimiento, v.tipo)),
-        el("td", {}, v.maquina_id ? el("a", { href: `maquina.html?id=${v.maquina_id}` }, v.maquina_nombre) : el("span", { className: "suave" }, "General")),
+        el(
+          "td",
+          {},
+          v.maquina_id ? el("a", { href: `maquina.html?id=${v.maquina_id}` }, v.maquina_nombre) : el("span", { className: "suave" }, "General"),
+          serieMonitor(v) ? el("div", { className: "suave chico" }, `Monitor: ${serieMonitor(v)}`) : null,
+        ),
         el("td", {}, pill(info.texto, info.color)),
         el("td", {}, acciones),
       ),
@@ -128,9 +133,9 @@ document.getElementById("boton-actualizar").before(
     exportarExcel(
       "vencimientos",
       "Vencimientos",
-      ["Vence", "Descripción", "Tipo", "Máquina", "Estado", "Observaciones"],
+      ["Vence", "Descripción", "Tipo", "Máquina", "N° serie monitor", "Estado", "Observaciones"],
       ultimosVisibles.map((v) => [
-        v.fecha_vencimiento, v.descripcion, opciones.tipos_vencimiento[v.tipo], v.maquina_nombre || "General",
+        v.fecha_vencimiento, v.descripcion, opciones.tipos_vencimiento[v.tipo], v.maquina_nombre || "General", serieMonitor(v),
         estadoVencimiento(v, opciones.dias_alerta).texto, v.observaciones,
       ]),
     ),

@@ -118,11 +118,15 @@ TIPOS_TRABAJO = {
 TIPOS_VENCIMIENTO = {
     "seguro": "Seguro",
     "licencia": "Licencia / carnet",
+    "suscripcion": "Suscripción / app",
     "vtv": "VTV / RTO",
     "habilitacion": "Habilitación",
     "patente": "Patente",
     "otro": "Otro",
 }
+
+# En estos vencimientos se muestra el N° de serie del monitor de la máquina.
+TIPOS_CON_MONITOR = ("licencia", "suscripcion")
 
 RUBROS_CONTACTO = {
     "senal": "Señal / GPS",
@@ -202,6 +206,7 @@ def todas():
         "medidas_service": MEDIDAS_SERVICE,
         "aviso_service_porcentaje": AVISO_SERVICE_PORCENTAJE,
         "tipos_vencimiento": TIPOS_VENCIMIENTO,
+        "tipos_con_monitor": list(TIPOS_CON_MONITOR),
         "rubros_contacto": RUBROS_CONTACTO,
         "categorias_animal": CATEGORIAS_ANIMAL,
         "hembras": list(HEMBRAS),

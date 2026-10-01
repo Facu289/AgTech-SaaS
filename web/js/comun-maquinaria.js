@@ -42,6 +42,11 @@ function guardarMaquina(maquinaId = null) {
 
 // ---------- Vencimientos ----------
 
+// N° de serie del monitor de la máquina, solo en licencias y suscripciones ("" si no corresponde).
+function serieMonitor(v) {
+  return opciones.tipos_con_monitor.includes(v.tipo) ? v.maquina_serie_monitor || "" : "";
+}
+
 // Estado de un vencimiento: { texto, color, dias }
 function estadoVencimiento(vencimiento, diasAlerta = 30) {
   if (vencimiento.resuelto) return { texto: "Resuelto", color: "verde", dias: null };

@@ -8,7 +8,7 @@ class MaquinaNoEncontrada(NoEncontrado):
 
 
 CAMPOS_MAQUINA = (
-    "nombre", "tipo", "marca", "modelo", "anio", "numero_serie", "patente",
+    "nombre", "tipo", "marca", "modelo", "anio", "numero_serie", "serie_monitor", "patente",
     "horas_motor", "horas_trilla", "observaciones",
 )
 
@@ -192,7 +192,7 @@ def eliminar_trabajo(trabajo_id):
 # ---------- Vencimientos ----------
 
 SELECT_VENCIMIENTOS = """
-    SELECT v.*, m.nombre AS maquina_nombre
+    SELECT v.*, m.nombre AS maquina_nombre, m.serie_monitor AS maquina_serie_monitor
     FROM vencimientos v LEFT JOIN maquinas m ON m.id = v.maquina_id
 """
 

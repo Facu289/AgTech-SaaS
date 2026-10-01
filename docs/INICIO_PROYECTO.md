@@ -58,6 +58,8 @@ Respondé en español (Argentina).
 
 - **Insumos y repuestos**: stock con historial, subcategorías, stock mínimo, archivar.
   Repuestos asignables a **varias máquinas** (tabla `insumo_maquinas`).
+  **N° de serie del monitor** en la máquina: lo muestran sus licencias y suscripciones
+  (nuevo tipo de vencimiento "Suscripción / app", también para apps sin máquina).
 - **Maquinaria**: ficha, horas, services/arreglos, trabajos (ha), vencimientos, contactos,
   **service programado por horas** (varios planes por máquina).
 - **Ganadería**: vacunos por caravana, partos (mellizos), tacto, servicio, aborto, sanidad,
@@ -65,11 +67,11 @@ Respondé en español (Argentina).
 - **Web**: diseño claro minimalista, menú izquierdo plegable, Inicio con alertas, filtros en
   todas las tablas, exportar a Excel (listado filtrado o todo).
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
-- **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 5**, backup diario y
+- **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 6**, backup diario y
   antes de cada migración.
-- **Tests**: 80 pasan (`python -m pytest`).
-- **Git**: último commit "Repuestos asignables a varias máquinas (tabla insumo_maquinas,
-  migración 5)".
+- **Tests**: 82 pasan (`python -m pytest`).
+- **Git**: último commit "N° de serie del monitor en máquinas para licencias y suscripciones
+  (migración 6)".
 
 **En curso, en otro chat**: armado del NAS según `docs/NAS_REQUISITOS.md`.
 

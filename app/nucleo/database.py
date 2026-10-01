@@ -223,6 +223,12 @@ MIGRACIONES = [
         "INSERT INTO insumo_maquinas (insumo_id, maquina_id) SELECT id, maquina_id FROM insumos WHERE maquina_id IS NOT NULL",
         "UPDATE insumos SET maquina_id = NULL",
     ],
+    # 6) N° de serie del monitor (GPS / piloto) de cada máquina.
+    #    Se guarda en la máquina y no en cada licencia: se carga una vez y todas las
+    #    licencias y suscripciones de esa máquina lo muestran.
+    [
+        "ALTER TABLE maquinas ADD COLUMN serie_monitor TEXT NOT NULL DEFAULT ''",
+    ],
 ]
 
 

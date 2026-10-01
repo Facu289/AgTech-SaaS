@@ -3,7 +3,7 @@ from datetime import date
 
 from app.maquinaria import db as maquinaria_db
 from app.maquinaria.rutas import vencimientos_para_alertar
-from app.nucleo.opciones import DIAS_ALERTA, TIPOS_MANTENIMIENTO, TIPOS_MAQUINA, TIPOS_TRABAJO
+from app.nucleo.opciones import DIAS_ALERTA, TIPOS_CON_MONITOR, TIPOS_MANTENIMIENTO, TIPOS_MAQUINA, TIPOS_TRABAJO
 from app.nucleo.utilidades import (
     describir_dias, dias_hasta, elegir_uno, formatear_cantidad, formatear_fecha, leer_cantidad,
     leer_numero, normalizar_texto, separar_motivo,
@@ -22,6 +22,8 @@ def _linea_vencimiento(v) -> str:
     dias = dias_hasta(v["fecha_vencimiento"])
     icono = "🔴" if dias < 0 else "🟡"
     maquina = f" ({v['maquina_nombre']})" if v.get("maquina_nombre") else ""
+    if v.get("maquina_serie_monitor") and v["tipo"] in TIPOS_CON_MONITOR:
+        maquina = f" ({v['maquina_nombre']} · monitor {v['maquina_serie_monitor']})"
     cuando = "venció " + describir_dias(dias) if dias < 0 else "vence " + describir_dias(dias)
     return f"{icono} {v['descripcion']}{maquina}: {cuando} ({formatear_fecha(v['fecha_vencimiento'])})"
 

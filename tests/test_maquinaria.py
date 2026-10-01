@@ -86,6 +86,25 @@ def test_vencimientos_y_alertas(cliente):
     assert alertas[0]["dias"] == 10
 
 
+
+def test_serie_del_monitor_en_licencias_y_suscripciones(cliente, bot):
+    """El N° de serie del monitor se carga en la máquina y aparece en sus licencias, no en el seguro."""
+    m = crear_maquina(cliente, nombre="Sembradora Pla", tipo="sembradora", serie_monitor="  PCG-12345 ")
+    assert m["serie_monitor"] == "PCG-12345"  # Sin espacios de más.
+    pronto = (date.today() + timedelta(days=5)).isoformat()
+    for descripcion, tipo in [("Piloto automático", "licencia"), ("Corte por sección", "licencia"),
+                              ("Seguimiento satelital", "suscripcion"), ("Seguro", "seguro")]:
+        r = cliente.post("/vencimientos", json={"descripcion": descripcion, "tipo": tipo,
+                                                "fecha_vencimiento": pronto, "maquina_id": m["id"]})
+        assert r.status_code == 201, r.text
+    vencimientos = {v["descripcion"]: v for v in cliente.get("/vencimientos").json()}
+    assert vencimientos["Corte por sección"]["maquina_serie_monitor"] == "PCG-12345"
+    respuesta = bot("/vencimientos")
+    assert "Piloto automático (Sembradora Pla · monitor PCG-12345)" in respuesta
+    assert "Seguimiento satelital (Sembradora Pla · monitor PCG-12345)" in respuesta
+    assert "Seguro (Sembradora Pla)" in respuesta  # El seguro no tiene que ver con el monitor.
+
+
 def test_contactos(cliente):
     r = cliente.post("/contactos", json={"nombre": "Pedro", "rubro": "mecanico", "telefono": "3584 123456"})
     assert r.status_code == 201

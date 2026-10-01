@@ -146,10 +146,10 @@ def hojas_completas() -> list:
         ("Movimientos", ["Fecha", "Insumo", "Tipo", "Cantidad", "Unidad", "Motivo"],
          [[m["fecha"], m["insumo_nombre"], m["tipo"].capitalize(), m["cantidad"], m["unidad"], m["motivo"]]
           for m in insumos_db.buscar_movimientos(limite=1_000_000)]),
-        ("Máquinas", ["Nombre", "Tipo", "Marca", "Modelo", "Año", "N° de serie", "Patente", "Horas motor",
+        ("Máquinas", ["Nombre", "Tipo", "Marca", "Modelo", "Año", "N° de serie", "N° serie monitor", "Patente", "Horas motor",
                       "Horas trilla", "Hectáreas trabajadas", "Archivada", "Observaciones"],
          [[m["nombre"], _etiqueta(opciones.TIPOS_MAQUINA, m["tipo"]), m["marca"], m["modelo"], m["anio"],
-           m["numero_serie"], m["patente"], m["horas_motor"], m["horas_trilla"], m["hectareas_totales"],
+           m["numero_serie"], m["serie_monitor"], m["patente"], m["horas_motor"], m["horas_trilla"], m["hectareas_totales"],
            "Sí" if m["archivado"] else "No", m["observaciones"]] for m in maquinas]),
         ("Services y arreglos", ["Fecha", "Máquina", "Tipo", "Horas", "Descripción", "Costo"],
          [[s["fecha"], nombre_maquina.get(s["maquina_id"]), _etiqueta(opciones.TIPOS_MANTENIMIENTO, s["tipo"]),
@@ -162,9 +162,9 @@ def hojas_completas() -> list:
         ("Trabajos", ["Fecha", "Máquina", "Trabajo", "Hectáreas", "Lote", "Cultivo", "Observaciones"],
          [[t["fecha"], t["maquina_nombre"], _etiqueta(opciones.TIPOS_TRABAJO, t["tipo"]), t["hectareas"], t["lote"],
            t["cultivo"], t["observaciones"]] for t in sorted(trabajos, key=lambda x: x["fecha"], reverse=True)]),
-        ("Vencimientos", ["Vence", "Descripción", "Tipo", "Máquina", "Resuelto", "Observaciones"],
+        ("Vencimientos", ["Vence", "Descripción", "Tipo", "Máquina", "N° serie monitor", "Resuelto", "Observaciones"],
          [[v["fecha_vencimiento"], v["descripcion"], _etiqueta(opciones.TIPOS_VENCIMIENTO, v["tipo"]),
-           v["maquina_nombre"] or "", "Sí" if v["resuelto"] else "No", v["observaciones"]]
+           v["maquina_nombre"] or "", (v["maquina_serie_monitor"] or "") if v["tipo"] in opciones.TIPOS_CON_MONITOR else "", "Sí" if v["resuelto"] else "No", v["observaciones"]]
           for v in maquinaria_db.listar_vencimientos(incluir_resueltos=True)]),
         ("Contactos", ["Nombre", "Rubro", "Empresa", "Teléfono", "Email", "Notas"],
          [[c["nombre"], _etiqueta(opciones.RUBROS_CONTACTO, c["rubro"]), c["empresa"], c["telefono"], c["email"],

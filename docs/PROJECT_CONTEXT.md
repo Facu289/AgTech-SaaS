@@ -76,13 +76,16 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
   La API recibe `maquinas: [ids]` (todavía acepta `maquina_id`) y devuelve `maquinas: [{id, nombre}]`.
 - `movimientos`: insumo_id, tipo (entrada/salida), cantidad (> 0), motivo, fecha
 - `notas`: texto, hecha, creada_en
-- `maquinas`: nombre (UNIQUE), tipo, marca, modelo, anio, numero_serie, patente, horas_motor,
-  horas_trilla (solo cosechadoras), observaciones, archivado
+- `maquinas`: nombre (UNIQUE), tipo, marca, modelo, anio, numero_serie, serie_monitor, patente, horas_motor,
+  horas_trilla (solo cosechadoras), observaciones, archivado.
+  `serie_monitor` (migración 6) es el N° de serie del monitor GPS / piloto: vive en la máquina
+  (se carga una vez) y las licencias y suscripciones de esa máquina lo muestran.
 - `planes_service`: maquina_id, nombre, cada_horas, medida (motor/trilla), ultima_horas,
   ultima_fecha, activo. Próximo = ultima_horas + cada_horas; avisa al faltar el 10%.
   Registrar un service con ese plan tildado (o "/service jd - aceite") reinicia el contador.
 - `mantenimientos` (service/arreglo: fecha, horas, descripción, costo) · `trabajos` (fecha, tipo,
-  hectáreas, lote, cultivo) · `vencimientos` (descripción, tipo, fecha, máquina opcional, resuelto)
+  hectáreas, lote, cultivo) · `vencimientos` (descripción, tipo, fecha, máquina opcional, resuelto;
+  tipos licencia y suscripción/app muestran el monitor de la máquina)
   · `contactos` (nombre, rubro, empresa, teléfono, email, notas)
 - `animales`: caravana (UNIQUE), categoria, raza, rodeo, fecha_nacimiento, estado_reproductivo
   ('', vacia, prenada), fecha_probable_parto, madre_id, estado (activo/vendido/muerto)
@@ -152,6 +155,7 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 ## Dónde estamos
 Fases 1 a 3 hechas, más: rediseño con Inicio y menú plegable, exportar a Excel, service
 programado por horas y lenguaje natural por Telegram (Gemini).
-También: repuestos asignables a varias máquinas (migración 5). Se usa con datos reales.
+También: repuestos asignables a varias máquinas (migración 5) y N° de serie del
+monitor en la máquina para licencias de piloto y suscripciones (migración 6). Se usa con datos reales.
 **Siguiente**: NAS (en otro chat) → GitHub → Docker → mudar la base → login web → WhatsApp.
 El detalle está en `docs/INICIO_PROYECTO.md`.
