@@ -70,7 +70,10 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
 
 ## Base de datos (SQLite)
 - `insumos`: id, nombre (UNIQUE NOCASE), categoria, **subcategoria**, unidad, cantidad (>= 0),
-  **stock_minimo**, **maquina_id** (repuestos), **archivado**, creado_en
+  **stock_minimo**, **archivado**, creado_en (la columna vieja `maquina_id` quedó sin uso: siempre NULL)
+- `insumo_maquinas`: insumo_id, maquina_id (PK de ambos). Tabla intermedia "muchos a muchos":
+  un repuesto sirve para varias máquinas y una máquina tiene varios repuestos (migración 5).
+  La API recibe `maquinas: [ids]` (todavía acepta `maquina_id`) y devuelve `maquinas: [{id, nombre}]`.
 - `movimientos`: insumo_id, tipo (entrada/salida), cantidad (> 0), motivo, fecha
 - `notas`: texto, hecha, creada_en
 - `maquinas`: nombre (UNIQUE), tipo, marca, modelo, anio, numero_serie, patente, horas_motor,
@@ -149,4 +152,6 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 ## Dónde estamos
 Fases 1 a 3 hechas, más: rediseño con Inicio y menú plegable, exportar a Excel, service
 programado por horas y lenguaje natural por Telegram (Gemini).
-**Siguiente**: usarla con datos reales y ajustar; después, ideas de "Futuro" del ROADMAP.
+También: repuestos asignables a varias máquinas (migración 5). Se usa con datos reales.
+**Siguiente**: NAS (en otro chat) → GitHub → Docker → mudar la base → login web → WhatsApp.
+El detalle está en `docs/INICIO_PROYECTO.md`.

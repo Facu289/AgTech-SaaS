@@ -207,6 +207,22 @@ MIGRACIONES = [
         """,
         "CREATE UNIQUE INDEX idx_planes_nombre ON planes_service(maquina_id, nombre COLLATE NOCASE)",
     ],
+    # 5) Un repuesto puede servir para VARIAS máquinas.
+    #    Tabla intermedia ("muchos a muchos"): una fila por cada par repuesto-máquina.
+    #    Se copian las asignaciones que ya existían en insumos.maquina_id, y esa columna
+    #    queda vacía y sin uso (SQLite no deja borrar columnas que son referencias).
+    [
+        """
+        CREATE TABLE insumo_maquinas (
+            insumo_id  INTEGER NOT NULL REFERENCES insumos(id),
+            maquina_id INTEGER NOT NULL REFERENCES maquinas(id),
+            PRIMARY KEY (insumo_id, maquina_id)
+        )
+        """,
+        "CREATE INDEX idx_insumo_maquinas_maquina ON insumo_maquinas(maquina_id)",
+        "INSERT INTO insumo_maquinas (insumo_id, maquina_id) SELECT id, maquina_id FROM insumos WHERE maquina_id IS NOT NULL",
+        "UPDATE insumos SET maquina_id = NULL",
+    ],
 ]
 
 

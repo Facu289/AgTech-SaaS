@@ -158,9 +158,7 @@ def ver_ficha_maquina(maquina_id: int):
         "planes": maquinaria_db.listar_planes(maquina_id, solo_activos=False),
         "trabajos": maquinaria_db.listar_trabajos(maquina_id=maquina_id),
         "vencimientos": maquinaria_db.listar_vencimientos(incluir_resueltos=True, maquina_id=maquina_id),
-        "repuestos": [
-            i for i in insumos_db.listar_insumos(incluir_archivados=False) if i["maquina_id"] == maquina_id
-        ],
+        "repuestos": insumos_db.listar_repuestos_de_maquina(maquina_id),
     }
 
 

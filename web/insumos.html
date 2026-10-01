@@ -122,8 +122,8 @@
           <select name="unidad" required data-unidades></select></label>
         <label class="campo"><span>Stock mínimo</span>
           <input name="stock_minimo" inputmode="decimal" autocomplete="off" placeholder="0 = sin aviso"></label>
-          <label class="campo" data-solo-repuesto><span>Para la máquina</span>
-            <select name="maquina_id" data-maquinas></select></label>
+          <div class="campo" data-solo-repuesto><span>Para las máquinas</span>
+            <details class="multi" data-maquinas data-nombre="maquinas" data-vacio="General (ninguna)"><summary>General (ninguna)</summary><div class="multi-lista"></div></details></div>
       </div>
       <p class="ayuda">La cantidad no se edita acá: se cambia registrando entradas y salidas, así queda el historial.</p>
       <p class="mensaje" hidden></p>

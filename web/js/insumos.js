@@ -16,7 +16,7 @@ const ventanaEditar = document.getElementById("ventana-editar");
 const formEditar = document.getElementById("form-editar");
 
 let opciones = null; // Categorías, tipos, unidades (vienen de GET /opciones).
-let maquinas = []; // Para elegir a qué máquina corresponde un repuesto.
+let maquinas = []; // Para elegir para qué máquinas sirve un repuesto.
 let todos = []; // Todos los insumos de esta página (sin filtrar).
 let editandoId = null;
 let ultimasVisibles = []; // Lo que se ve en la tabla (para exportar a Excel).
@@ -91,8 +91,8 @@ function actualizarFiltroTipos() {
 
 function llenarSelectMaquinas() {
   const lista = Object.fromEntries(maquinas.map((m) => [m.id, m.nombre]));
-  for (const select of document.querySelectorAll("[data-maquinas]")) {
-    llenarSelect(select, lista, "General (ninguna)");
+  for (const selector of document.querySelectorAll("details[data-maquinas]")) {
+    llenarSelectorMultiple(selector, lista);
   }
   const filtro = formFiltros.querySelector("[data-maquinas-filtro]");
   if (filtro) {
@@ -142,8 +142,8 @@ function pasaFiltros(insumo, filtros) {
   if (filtros.texto && !normalizar(insumo.nombre).includes(normalizar(filtros.texto))) return false;
   if (filtros.categoria && insumo.categoria !== filtros.categoria) return false;
   if (filtros.subcategoria && insumo.subcategoria !== filtros.subcategoria) return false;
-  if (filtros.maquina === "general" && insumo.maquina_id !== null) return false;
-  if (filtros.maquina && filtros.maquina !== "general" && String(insumo.maquina_id) !== filtros.maquina) return false;
+  if (filtros.maquina === "general" && insumo.maquinas.length > 0) return false;
+  if (filtros.maquina && filtros.maquina !== "general" && !insumo.maquinas.some((m) => String(m.id) === filtros.maquina)) return false;
   if (filtros.stock === "con" && insumo.cantidad <= 0) return false;
   if (filtros.stock === "sin" && insumo.cantidad > 0) return false;
   if (filtros.stock === "bajo" && !stockBajo(insumo)) return false;
@@ -204,7 +204,9 @@ function mostrarTabla() {
       { className: insumo.archivado ? "fila-archivada" : "" },
       nombre,
       celdaCategoria(insumo),
-      ES_REPUESTOS ? el("td", {}, insumo.maquina_nombre || el("span", { className: "suave" }, "General")) : null,
+      ES_REPUESTOS
+        ? el("td", {}, insumo.maquinas.length ? insumo.maquinas.map((m) => m.nombre).join(", ") : el("span", { className: "suave" }, "General"))
+        : null,
       el("td", { className: claseCantidad, title: bajo ? "En o por debajo del mínimo" : "" }, formatearCantidad(insumo.cantidad)),
       el("td", { className: "suave" }, insumo.unidad),
       el("td", { className: "numero suave" }, insumo.stock_minimo > 0 ? formatearCantidad(insumo.stock_minimo) : "—"),
@@ -279,7 +281,7 @@ function abrirEdicion(insumo) {
   editandoId = insumo.id;
   formEditar.elements.categoria.value = insumo.categoria;
   actualizarTipos(formEditar);
-  completarFormulario(formEditar, { ...insumo, maquina_id: insumo.maquina_id ?? "" });
+  completarFormulario(formEditar, { ...insumo, maquinas: insumo.maquinas.map((m) => m.id) });
   abrirVentana(ventanaEditar);
 }
 
@@ -330,11 +332,12 @@ formFiltros.addEventListener("reset", () => {
 // Exportar a Excel exactamente lo que se ve (con los filtros aplicados).
 function exportar() {
   const columnas = ES_REPUESTOS
-    ? ["Repuesto", "Tipo", "Máquina", "Cantidad", "Unidad", "Stock mínimo", "Archivado"]
+    ? ["Repuesto", "Tipo", "Máquinas", "Cantidad", "Unidad", "Stock mínimo", "Archivado"]
     : ["Insumo", "Categoría", "Tipo", "Cantidad", "Unidad", "Stock mínimo", "Archivado"];
   const filas = ultimasVisibles.map((i) => {
     const tipo = subcategoriasDe(i.categoria)[i.subcategoria] || "";
-    const inicio = ES_REPUESTOS ? [i.nombre, tipo, i.maquina_nombre || "General"] : [i.nombre, opciones.categorias[i.categoria], tipo];
+    const nombresMaquinas = i.maquinas.map((m) => m.nombre).join(", ") || "General";
+    const inicio = ES_REPUESTOS ? [i.nombre, tipo, nombresMaquinas] : [i.nombre, opciones.categorias[i.categoria], tipo];
     return [...inicio, i.cantidad, i.unidad, i.stock_minimo, i.archivado ? "Sí" : "No"];
   });
   exportarExcel(ES_REPUESTOS ? "repuestos" : "insumos", ES_REPUESTOS ? "Repuestos" : "Insumos", columnas, filas);

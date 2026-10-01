@@ -37,19 +37,53 @@ def test_no_permite_duplicados_con_tildes(cliente):
     assert "Rulemán" in r.json()["detail"]
 
 
-def test_repuesto_vinculado_a_maquina(cliente):
-    maquina = cliente.post("/maquinas", json={"nombre": "JD 6110", "tipo": "tractor"}).json()
+def test_repuesto_para_varias_maquinas(cliente):
+    jd = cliente.post("/maquinas", json={"nombre": "JD 6110", "tipo": "tractor"}).json()
+    axial = cliente.post("/maquinas", json={"nombre": "Axial 8250", "tipo": "cosechadora"}).json()
     filtro = crear(cliente, nombre="Filtro aceite", categoria="repuesto", subcategoria="filtros",
-                   unidad="unidades", maquina_id=maquina["id"])
-    assert filtro["maquina_nombre"] == "JD 6110"
-    # Un insumo que no es repuesto no guarda máquina.
-    urea = crear(cliente, maquina_id=maquina["id"])
-    assert urea["maquina_id"] is None
+                   unidad="unidades", maquinas=[jd["id"], axial["id"], jd["id"]])  # jd repetida a propósito.
+    assert [m["nombre"] for m in filtro["maquinas"]] == ["Axial 8250", "JD 6110"]  # Sin repetidos, por nombre.
+    # Aparece en la ficha de AMBAS máquinas.
+    for maquina in (jd, axial):
+        repuestos = cliente.get(f"/maquinas/{maquina['id']}").json()["repuestos"]
+        assert [r["nombre"] for r in repuestos] == ["Filtro aceite"]
+    # Un insumo que no es repuesto no guarda máquinas.
+    urea = crear(cliente, maquinas=[jd["id"]])
+    assert urea["maquinas"] == []
+
+
+def test_editar_cambia_las_maquinas(cliente):
+    jd = cliente.post("/maquinas", json={"nombre": "JD", "tipo": "tractor"}).json()
+    axial = cliente.post("/maquinas", json={"nombre": "Axial", "tipo": "cosechadora"}).json()
+    correa = crear(cliente, nombre="Correa", categoria="repuesto", unidad="unidades", maquinas=[jd["id"]])
+    datos = {"nombre": "Correa", "categoria": "repuesto", "unidad": "unidades"}
+    r = cliente.put(f"/insumos/{correa['id']}", json={**datos, "maquinas": [axial["id"]]})
+    assert [m["nombre"] for m in r.json()["maquinas"]] == ["Axial"]
+    assert cliente.get(f"/maquinas/{jd['id']}").json()["repuestos"] == []
+    r = cliente.put(f"/insumos/{correa['id']}", json={**datos, "maquinas": []})  # General.
+    assert r.json()["maquinas"] == []
+
+
+def test_todavia_acepta_maquina_id(cliente):
+    """Compatibilidad con la forma vieja (una sola máquina)."""
+    jd = cliente.post("/maquinas", json={"nombre": "JD", "tipo": "tractor"}).json()
+    rep = crear(cliente, nombre="Bujía", categoria="repuesto", unidad="unidades", maquina_id=jd["id"])
+    assert [m["id"] for m in rep["maquinas"]] == [jd["id"]]
+    general = crear(cliente, nombre="Grasa", categoria="repuesto", unidad="kg", maquina_id="")
+    assert general["maquinas"] == []
+
+
+def test_maquina_con_repuestos_no_se_borra_y_repuesto_se_borra(cliente):
+    jd = cliente.post("/maquinas", json={"nombre": "JD", "tipo": "tractor"}).json()
+    rep = crear(cliente, nombre="Bujía", categoria="repuesto", unidad="unidades", maquinas=[jd["id"]])
+    assert cliente.delete(f"/maquinas/{jd['id']}").status_code == 409  # Tiene repuestos vinculados.
+    assert cliente.delete(f"/insumos/{rep['id']}").status_code == 204  # El repuesto sí (sin movimientos).
+    assert cliente.delete(f"/maquinas/{jd['id']}").status_code == 204  # Ahora la máquina queda libre.
 
 
 def test_maquina_inexistente(cliente):
-    r = cliente.post("/insumos", json={"nombre": "F", "categoria": "repuesto", "unidad": "unidades", "maquina_id": 99})
-    assert r.status_code == 400
+    r = cliente.post("/insumos", json={"nombre": "F", "categoria": "repuesto", "unidad": "unidades", "maquinas": [99]})
+    assert r.status_code == 400 and "99" in r.json()["detail"]
 
 
 def test_movimiento_con_coma_y_stock_insuficiente(cliente):
@@ -153,11 +187,19 @@ def test_stock_con_filtro(bot):
     assert "urea" in bot("/stock ure")
 
 
-def test_repuestos(bot):
+def test_repuestos(bot, cliente):
     bot("/nuevo filtro aceite filtros unidades")
     bot("/nuevo urea fertilizante kg")
     respuesta = bot("/repuestos")
     assert "filtro aceite" in respuesta and "urea" not in respuesta
+    # Con varias máquinas: se listan todas y se puede filtrar por cualquiera.
+    jd = cliente.post("/maquinas", json={"nombre": "Tractor JD", "tipo": "tractor"}).json()
+    axial = cliente.post("/maquinas", json={"nombre": "Cosechadora Axial", "tipo": "cosechadora"}).json()
+    filtro = next(i for i in cliente.get("/insumos").json() if i["nombre"] == "filtro aceite")
+    cliente.put(f"/insumos/{filtro['id']}", json={"nombre": "filtro aceite", "categoria": "repuesto",
+                                                 "unidad": "unidades", "maquinas": [jd["id"], axial["id"]]})
+    assert "→ Cosechadora Axial, Tractor JD" in bot("/repuestos")
+    assert "filtro aceite" in bot("/repuestos axial") and "filtro aceite" in bot("/repuestos jd")
 
 
 def test_archivado_no_aparece_en_telegram(bot, cliente):

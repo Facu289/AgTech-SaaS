@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from app.insumos import db as insumos_db
 from app.maquinaria import db as maquinaria_db
 from app.nucleo.opciones import CATEGORIAS, UNIDADES, subcategorias_de
-from app.nucleo.tipos import IdOpcional, NumeroOCero, opcion
+from app.nucleo.tipos import NumeroOCero, opcion
 from app.nucleo.utilidades import formatear_cantidad, leer_cantidad, normalizar_texto
 
 router = APIRouter(tags=["Insumos"])
@@ -28,7 +28,17 @@ class InsumoDatos(BaseModel):
     subcategoria: str = ""
     unidad: Unidad
     stock_minimo: NumeroOCero = 0
-    maquina_id: IdOpcional = None  # Solo para repuestos: para qué máquina es.
+    maquinas: list[int] = []  # Solo para repuestos: ids de las máquinas para las que sirve.
+
+    @model_validator(mode="before")
+    @classmethod
+    def aceptar_maquina_id(cls, datos):
+        """Compatibilidad: antes se mandaba UNA máquina en "maquina_id". La pasamos a la lista."""
+        if isinstance(datos, dict) and "maquina_id" in datos and "maquinas" not in datos:
+            datos = dict(datos)
+            maquina_id = datos.pop("maquina_id")
+            datos["maquinas"] = [maquina_id] if maquina_id not in (None, "") else []
+        return datos
 
     @field_validator("subcategoria", mode="before")
     @classmethod
@@ -42,13 +52,19 @@ class InsumoDatos(BaseModel):
         if self.subcategoria and self.subcategoria not in validas:
             raise ValueError(f"'{self.subcategoria}' no es una subcategoría de {self.categoria}")
         if self.categoria != "repuesto":
-            self.maquina_id = None
+            self.maquinas = []
+        self.maquinas = list(dict.fromkeys(self.maquinas))  # Sin repetidos, en el mismo orden.
         return self
 
 
 class InsumoNuevo(InsumoDatos):
     """Para crear: además se puede cargar un stock inicial."""
     cantidad: NumeroOCero = 0
+
+
+class MaquinaCorta(BaseModel):
+    id: int
+    nombre: str
 
 
 class Insumo(BaseModel):
@@ -60,8 +76,7 @@ class Insumo(BaseModel):
     unidad: str
     cantidad: float
     stock_minimo: float
-    maquina_id: Optional[int]
-    maquina_nombre: Optional[str]
+    maquinas: list[MaquinaCorta]
     archivado: bool
     tiene_movimientos: bool
 
@@ -134,12 +149,13 @@ def insumos_con_stock_bajo():
 
 
 def _revisar_datos(datos: InsumoDatos, excluir_id=None):
-    """Chequeos que necesitan la base: nombre repetido y máquina existente."""
+    """Chequeos que necesitan la base: nombre repetido y que las máquinas existan."""
     existente = insumo_con_mismo_nombre(datos.nombre, excluir_id)
     if existente:
         raise HTTPException(status_code=409, detail=mensaje_duplicado(existente))
-    if datos.maquina_id is not None and maquinaria_db.obtener_maquina(datos.maquina_id) is None:
-        raise HTTPException(status_code=400, detail="La máquina elegida no existe")
+    for maquina_id in datos.maquinas:
+        if maquinaria_db.obtener_maquina(maquina_id) is None:
+            raise HTTPException(status_code=400, detail=f"La máquina {maquina_id} no existe")
 
 
 # ---------- Endpoints ----------
@@ -154,7 +170,7 @@ def crear_insumo(insumo: InsumoNuevo):
     _revisar_datos(insumo)
     return insumos_db.agregar_insumo(
         insumo.nombre, insumo.categoria, insumo.unidad, insumo.cantidad,
-        insumo.subcategoria, insumo.maquina_id, insumo.stock_minimo,
+        insumo.subcategoria, insumo.maquinas, insumo.stock_minimo,
     )
 
 
@@ -164,7 +180,7 @@ def editar_insumo(insumo_id: int, datos: InsumoDatos):
     _revisar_datos(datos, excluir_id=insumo_id)
     return insumos_db.editar_insumo(
         insumo_id, datos.nombre, datos.categoria, datos.subcategoria,
-        datos.unidad, datos.maquina_id, datos.stock_minimo,
+        datos.unidad, datos.maquinas, datos.stock_minimo,
     )
 
 

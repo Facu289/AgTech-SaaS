@@ -19,17 +19,43 @@ class StockInsuficiente(Exception):
 # La misma consulta sirve para listar y para buscar uno (así devuelven lo mismo).
 SELECT_INSUMOS = """
     SELECT i.id, i.nombre, i.categoria, i.subcategoria, i.unidad, i.cantidad,
-           i.stock_minimo, i.maquina_id, m.nombre AS maquina_nombre, i.archivado,
+           i.stock_minimo, i.archivado,
            EXISTS (SELECT 1 FROM movimientos mv WHERE mv.insumo_id = i.id) AS tiene_movimientos
     FROM insumos i
-    LEFT JOIN maquinas m ON m.id = i.maquina_id
 """
+
+
+def _agregar_maquinas(conexion, insumos: list) -> list:
+    """A cada insumo le agrega "maquinas": [{"id": 1, "nombre": "Tractor JD"}, ...].
+
+    Se hace con UNA consulta para todos (no una por insumo) y se reparte en Python.
+    """
+    por_insumo = {insumo["id"]: [] for insumo in insumos}
+    filas = conexion.execute(
+        "SELECT im.insumo_id, m.id, m.nombre FROM insumo_maquinas im "
+        "JOIN maquinas m ON m.id = im.maquina_id ORDER BY m.nombre COLLATE NOCASE"
+    ).fetchall()
+    for insumo_id, maquina_id, nombre in filas:
+        if insumo_id in por_insumo:
+            por_insumo[insumo_id].append({"id": maquina_id, "nombre": nombre})
+    for insumo in insumos:
+        insumo["maquinas"] = por_insumo[insumo["id"]]
+    return insumos
+
+
+def _guardar_maquinas(conexion, insumo_id, maquina_ids):
+    """Reemplaza las máquinas de un insumo: borra las que tenía y guarda las nuevas."""
+    conexion.execute("DELETE FROM insumo_maquinas WHERE insumo_id = ?", (insumo_id,))
+    conexion.executemany(
+        "INSERT INTO insumo_maquinas (insumo_id, maquina_id) VALUES (?, ?)",
+        [(insumo_id, maquina_id) for maquina_id in dict.fromkeys(maquina_ids)],  # Sin repetidos.
+    )
 
 
 def _obtener_insumo(conexion, insumo_id):
     """Busca un insumo por id usando una conexión ya abierta. Devuelve dict o None."""
     fila = conexion.execute(SELECT_INSUMOS + " WHERE i.id = ?", (insumo_id,)).fetchone()
-    return dict(fila) if fila else None
+    return _agregar_maquinas(conexion, [dict(fila)])[0] if fila else None
 
 
 def obtener_insumo(insumo_id):
@@ -44,18 +70,19 @@ def listar_insumos(incluir_archivados=False):
         filas = conexion.execute(
             SELECT_INSUMOS + condicion + " ORDER BY i.categoria, i.nombre"
         ).fetchall()
-        return filas_a_dicts(filas)
+        return _agregar_maquinas(conexion, filas_a_dicts(filas))
 
 
-def agregar_insumo(nombre, categoria, unidad, cantidad=0, subcategoria="", maquina_id=None, stock_minimo=0):
-    """Guarda un insumo nuevo (y su stock inicial) y lo devuelve como diccionario."""
+def agregar_insumo(nombre, categoria, unidad, cantidad=0, subcategoria="", maquina_ids=(), stock_minimo=0):
+    """Guarda un insumo nuevo (su stock inicial y sus máquinas) y lo devuelve como diccionario."""
     with conectar() as conexion:
         cursor = conexion.execute(
-            "INSERT INTO insumos (nombre, categoria, subcategoria, unidad, cantidad, maquina_id, stock_minimo) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (nombre, categoria, subcategoria, unidad, cantidad, maquina_id, stock_minimo),
+            "INSERT INTO insumos (nombre, categoria, subcategoria, unidad, cantidad, stock_minimo) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (nombre, categoria, subcategoria, unidad, cantidad, stock_minimo),
         )
         insumo_id = cursor.lastrowid
+        _guardar_maquinas(conexion, insumo_id, maquina_ids)
         if cantidad > 0:
             conexion.execute(
                 "INSERT INTO movimientos (insumo_id, tipo, cantidad, motivo) "
@@ -65,17 +92,26 @@ def agregar_insumo(nombre, categoria, unidad, cantidad=0, subcategoria="", maqui
         return _obtener_insumo(conexion, insumo_id)
 
 
-def editar_insumo(insumo_id, nombre, categoria, subcategoria, unidad, maquina_id, stock_minimo):
+def editar_insumo(insumo_id, nombre, categoria, subcategoria, unidad, maquina_ids, stock_minimo):
     """Cambia los datos de un insumo (NO la cantidad: eso se hace con movimientos)."""
     with conectar() as conexion:
         cursor = conexion.execute(
             "UPDATE insumos SET nombre = ?, categoria = ?, subcategoria = ?, unidad = ?, "
-            "maquina_id = ?, stock_minimo = ? WHERE id = ?",
-            (nombre, categoria, subcategoria, unidad, maquina_id, stock_minimo, insumo_id),
+            "stock_minimo = ? WHERE id = ?",
+            (nombre, categoria, subcategoria, unidad, stock_minimo, insumo_id),
         )
         if cursor.rowcount == 0:
             raise InsumoNoEncontrado()
+        _guardar_maquinas(conexion, insumo_id, maquina_ids)
         return _obtener_insumo(conexion, insumo_id)
+
+
+def listar_repuestos_de_maquina(maquina_id):
+    """Repuestos (no archivados) que sirven para una máquina."""
+    return [
+        insumo for insumo in listar_insumos()
+        if any(maquina["id"] == maquina_id for maquina in insumo["maquinas"])
+    ]
 
 
 def archivar_insumo(insumo_id, archivado=True):
@@ -97,6 +133,7 @@ def eliminar_insumo(insumo_id):
             raise InsumoNoEncontrado()
         if insumo["tiene_movimientos"]:
             raise TieneHistorial()
+        conexion.execute("DELETE FROM insumo_maquinas WHERE insumo_id = ?", (insumo_id,))
         conexion.execute("DELETE FROM insumos WHERE id = ?", (insumo_id,))
 
 

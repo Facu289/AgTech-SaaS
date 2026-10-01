@@ -15,7 +15,7 @@
 - [x] Notas desde Telegram (/nota, /notas, /hecha)
 - [x] Backup automático diario de la base (+ manual con `python backup.py`, + antes de migrar)
 - [x] Subcategorías (herbicida, insecticida, filtros, correas...) y stock mínimo con alertas
-- [x] Repuestos (página propia, /repuestos) vinculables a una máquina
+- [x] Repuestos (página propia, /repuestos) vinculables a una o varias máquinas
 - [x] Eliminar insumo (si no tiene movimientos) o archivarlo (si tiene historial)
 - [ ] Ver historial de movimientos desde Telegram (/historial)  ← mini desafío (en la web ya está)
 
@@ -52,7 +52,15 @@
 - [x] Mensajes sin comando interpretados con Gemini ("gasté 20 litros de glifosato en el lote 4")
 - [x] Confirmación con "sí"/"no" antes de registrar; consultas se responden directo
 
-## Próximo
+## Próximo (producción en el NAS — detalle en INICIO_PROYECTO.md)
+- [ ] NAS listo (otro chat, según NAS_REQUISITOS.md)
+- [ ] Código en GitHub (repo privado)
+- [ ] Docker + docker-compose (api + bot) y mudar la base al NAS
+- [ ] Login en la web
+- [ ] Bot de WhatsApp (Meta Cloud API + Cloudflare Tunnel), mismos comandos que Telegram
+- [ ] Backups fuera del NAS (nube)
+
+## Después
 - [ ] Usar la app con datos reales durante unas semanas y anotar qué falta o molesta
 - [ ] Pesadas (kg por animal) y ganancia de peso
 
@@ -60,6 +68,4 @@
 - [ ] Bot con botones: crear insumo y cargar datos respondiendo preguntas
 - [ ] Leer fotos de órdenes de aplicación y descontar agroquímicos del stock
 - [ ] Órdenes de trabajo (unidad "dosis")
-- [ ] Login en la web (obligatorio antes de producción)
-- [ ] React, mapas (Leaflet/OpenStreetMap), PostgreSQL, producción
-- [ ] Backups fuera de la PC (nube)
+- [ ] React, mapas (Leaflet/OpenStreetMap), PostgreSQL

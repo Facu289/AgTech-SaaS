@@ -52,3 +52,30 @@ def test_no_arranca_con_la_base_en_el_lugar_viejo(tmp_path, monkeypatch):
     (tmp_path / "datos").mkdir()
     (tmp_path / "datos" / "agroapp.db").write_bytes(b"")  # Ya movida: todo bien.
     database.verificar_ubicacion()
+
+
+
+def test_migracion_5_copia_la_maquina_que_ya_tenia_cada_repuesto(tmp_path, monkeypatch):
+    """Los repuestos que ya tenían UNA máquina (columna vieja) la conservan en la tabla nueva."""
+    import importlib
+
+    from app.nucleo import database
+    monkeypatch.setenv("AGROAPP_DB", str(tmp_path / "v4.db"))
+    importlib.reload(database)
+    todas = database.MIGRACIONES
+    # 1) Base en la versión 4 (como estaba antes de este cambio), con un repuesto asignado.
+    monkeypatch.setattr(database, "MIGRACIONES", todas[:4])
+    database.crear_tablas()
+    with database.conectar() as conexion:
+        conexion.execute("INSERT INTO maquinas (nombre, tipo) VALUES ('JD', 'tractor')")
+        conexion.execute("INSERT INTO insumos (nombre, categoria, unidad, maquina_id) VALUES ('Filtro', 'repuesto', 'unidades', 1)")
+        conexion.execute("INSERT INTO insumos (nombre, categoria, unidad) VALUES ('Grasa', 'repuesto', 'kg')")
+    # 2) Se aplica la migración 5.
+    monkeypatch.setattr(database, "MIGRACIONES", todas)
+    assert database.migraciones_pendientes() == 1
+    database.crear_tablas()
+
+    from app.insumos import db as insumos_db
+    importlib.reload(insumos_db)
+    por_nombre = {i["nombre"]: i["maquinas"] for i in insumos_db.listar_insumos()}
+    assert por_nombre == {"Filtro": [{"id": 1, "nombre": "JD"}], "Grasa": []}

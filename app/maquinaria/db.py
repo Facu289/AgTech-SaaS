@@ -94,7 +94,7 @@ def eliminar_maquina(maquina_id):
     with conectar() as conexion:
         if _obtener_maquina(conexion, maquina_id) is None:
             raise MaquinaNoEncontrada()
-        for tabla in ("mantenimientos", "trabajos", "vencimientos", "insumos", "planes_service"):
+        for tabla in ("mantenimientos", "trabajos", "vencimientos", "insumo_maquinas", "planes_service"):
             usado = conexion.execute(
                 f"SELECT 1 FROM {tabla} WHERE maquina_id = ? LIMIT 1", (maquina_id,)
             ).fetchone()

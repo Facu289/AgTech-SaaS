@@ -246,10 +246,21 @@ function llenarSelect(select, diccionario, primera = "") {
 
 // Lee todos los campos de un formulario como objeto { nombre: valor }.
 // Las casillas (checkbox) se leen como true / false.
+// Las casillas con data-lista (varias con el mismo nombre) se leen como una LISTA
+// con los valores tildados: maquinas: ["1", "3"].
 function leerFormulario(formulario) {
   const datos = Object.fromEntries(new FormData(formulario));
   for (const casilla of formulario.querySelectorAll('input[type="checkbox"]')) {
-    datos[casilla.name] = casilla.checked;
+    if ("lista" in casilla.dataset) {
+      datos[casilla.name] ??= [];
+      if (!Array.isArray(datos[casilla.name])) datos[casilla.name] = [];
+      if (casilla.checked) datos[casilla.name].push(casilla.value);
+    } else {
+      datos[casilla.name] = casilla.checked;
+    }
+  }
+  for (const casilla of formulario.querySelectorAll('input[type="checkbox"][data-lista]')) {
+    datos[casilla.name] ??= [];
   }
   for (const [clave, valor] of Object.entries(datos)) {
     if (typeof valor === "string") datos[clave] = valor.trim();
@@ -262,10 +273,61 @@ function completarFormulario(formulario, datos) {
   for (const campo of formulario.elements) {
     if (!campo.name || !(campo.name in datos)) continue;
     const valor = datos[campo.name];
-    if (campo.type === "checkbox") campo.checked = Boolean(valor);
+    if (campo.type === "checkbox" && "lista" in campo.dataset) {
+      campo.checked = (valor || []).map(String).includes(campo.value);
+    } else if (campo.type === "checkbox") campo.checked = Boolean(valor);
     else campo.value = valor ?? "";
   }
+  for (const selector of formulario.querySelectorAll("details.multi")) actualizarResumenMultiple(selector);
 }
+
+// ---------- Selector múltiple (desplegable con casillas) ----------
+// En el HTML:  <details class="multi" data-nombre="maquinas" data-vacio="General (ninguna)">
+//                <summary></summary><div class="multi-lista"></div></details>
+// Cada opción es una casilla con data-lista, así leerFormulario devuelve una lista.
+
+function llenarSelectorMultiple(selector, diccionario) {
+  const tildados = [...selector.querySelectorAll("input:checked")].map((c) => c.value);
+  const lista = selector.querySelector(".multi-lista");
+  lista.replaceChildren();
+  if (Object.keys(diccionario).length === 0) {
+    lista.append(el("p", { className: "ayuda" }, "No hay opciones cargadas."));
+  }
+  // Ordenadas por nombre. (Ojo: en un objeto de JavaScript, las claves numéricas, como
+  // los ids, se ordenan solas de menor a mayor; por eso ordenamos nosotros.)
+  const opciones = Object.entries(diccionario).sort((a, b) => a[1].localeCompare(b[1], "es"));
+  for (const [valor, texto] of opciones) {
+    const casilla = el("input", { type: "checkbox", name: selector.dataset.nombre, value: valor, checked: tildados.includes(valor) });
+    casilla.dataset.lista = "";
+    lista.append(el("label", { className: "casilla" }, casilla, texto));
+  }
+  actualizarResumenMultiple(selector);
+}
+
+// El texto que se ve cerrado: "General (ninguna)", "Tractor JD", "JD, Axial" o "3 elegidas".
+function actualizarResumenMultiple(selector) {
+  const nombres = [...selector.querySelectorAll("input:checked")].map((c) => c.parentElement.textContent);
+  let texto = selector.dataset.vacio || "Ninguna";
+  if (nombres.length > 0 && nombres.length <= 2) texto = nombres.join(", ");
+  if (nombres.length > 2) texto = `${nombres.length} elegidas`;
+  selector.querySelector("summary").textContent = texto;
+  selector.querySelector("summary").title = nombres.join(", ");
+}
+
+document.addEventListener("change", (evento) => {
+  const selector = evento.target.closest("details.multi");
+  if (selector) actualizarResumenMultiple(selector);
+});
+document.addEventListener("reset", (evento) => {
+  // Después de que el navegador vacía el formulario, actualizamos los textos.
+  setTimeout(() => evento.target.querySelectorAll("details.multi").forEach(actualizarResumenMultiple));
+});
+// Un clic afuera cierra el desplegable.
+document.addEventListener("click", (evento) => {
+  for (const abierto of document.querySelectorAll("details.multi[open]")) {
+    if (!abierto.contains(evento.target)) abierto.open = false;
+  }
+});
 
 // Envía un formulario con fetch: desactiva el botón mientras espera
 // y muestra el error (si hay) en el elemento .mensaje del formulario.

@@ -139,9 +139,10 @@ def hojas_completas() -> list:
 
     C, E = opciones.CATEGORIAS, opciones.ESTADOS_REPRODUCTIVOS
     return [
-        ("Insumos", ["Nombre", "Categoría", "Tipo", "Cantidad", "Unidad", "Stock mínimo", "Máquina", "Archivado"],
+        ("Insumos", ["Nombre", "Categoría", "Tipo", "Cantidad", "Unidad", "Stock mínimo", "Máquinas", "Archivado"],
          [[i["nombre"], _etiqueta(C, i["categoria"]), _subcategoria(i), i["cantidad"], i["unidad"],
-           i["stock_minimo"], i["maquina_nombre"] or "", "Sí" if i["archivado"] else "No"] for i in insumos]),
+           i["stock_minimo"], ", ".join(m["nombre"] for m in i["maquinas"]),
+           "Sí" if i["archivado"] else "No"] for i in insumos]),
         ("Movimientos", ["Fecha", "Insumo", "Tipo", "Cantidad", "Unidad", "Motivo"],
          [[m["fecha"], m["insumo_nombre"], m["tipo"].capitalize(), m["cantidad"], m["unidad"], m["motivo"]]
           for m in insumos_db.buscar_movimientos(limite=1_000_000)]),

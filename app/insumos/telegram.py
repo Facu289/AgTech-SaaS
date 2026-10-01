@@ -35,8 +35,8 @@ def _linea_insumo(insumo) -> str:
     if sub:
         texto += f" ({sub.lower()})"
     texto += f": {cantidad} {insumo['unidad']}"
-    if insumo.get("maquina_nombre"):
-        texto += f" → {insumo['maquina_nombre']}"
+    if insumo.get("maquinas"):
+        texto += " → " + ", ".join(m["nombre"] for m in insumo["maquinas"])
     if stock_bajo(insumo):
         texto += " ⚠️ bajo mínimo"
     return texto
@@ -73,7 +73,8 @@ def comando_repuestos(argumento: str) -> str:
         buscado = normalizar_texto(argumento)
         repuestos = [
             r for r in repuestos
-            if _coincide(r, buscado) or buscado in normalizar_texto(r.get("maquina_nombre") or "")
+            if _coincide(r, buscado)
+            or any(buscado in normalizar_texto(m["nombre"]) for m in r.get("maquinas", []))
         ]
         if not repuestos:
             return f"No encontré repuestos con '{argumento}'."
