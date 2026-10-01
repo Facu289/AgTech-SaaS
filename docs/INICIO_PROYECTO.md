@@ -62,16 +62,17 @@ Respondé en español (Argentina).
   (nuevo tipo de vencimiento "Suscripción / app", también para apps sin máquina).
 - **Maquinaria**: ficha, horas, services/arreglos, trabajos (ha), vencimientos, contactos,
   **service programado por horas** (varios planes por máquina).
-- **Ganadería**: vacunos por caravana, partos (mellizos), tacto, servicio, aborto, sanidad,
+- **Ganadería**: **especies que creás vos** (página Especies: vacuno, ovino, porcino, gallina,
+  llama...) con sus categorías y días de gestación; animales por caravana (se puede repetir,
+  la app pregunta) o **en grupo con cantidad**; partos, tacto, servicio, aborto, sanidad,
   fecha probable de parto.
 - **Web**: diseño claro minimalista, menú izquierdo plegable, Inicio con alertas, filtros en
   todas las tablas, exportar a Excel (listado filtrado o todo).
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
-- **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 6**, backup diario y
+- **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 7**, backup diario y
   antes de cada migración.
-- **Tests**: 82 pasan (`python -m pytest`).
-- **Git**: último commit "N° de serie del monitor en máquinas para licencias y suscripciones
-  (migración 6)".
+- **Tests**: 91 pasan (`python -m pytest`).
+- **Git**: último commit "Especies libres, grupos de animales y caravana repetible (migración 7)".
 
 **En curso, en otro chat**: armado del NAS según `docs/NAS_REQUISITOS.md`.
 
@@ -120,6 +121,7 @@ Copia diaria de `datos/backups` a la nube (rclone u otro) y una prueba de restau
 ### Ideas chicas pendientes (ROADMAP)
 - `/historial` por Telegram (mini desafío).
 - Pesadas y ganancia de peso.
+- Grupos: altas y bajas de cabezas con historial.
 - Ir anotando lo que falte o moleste al usar la app con datos reales.
 
 ## 5. Datos útiles

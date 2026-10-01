@@ -9,6 +9,7 @@ const formEvento = document.getElementById("form-evento");
 let opciones = null;
 let ficha = null; // { animal, eventos, crias }
 let creandoCria = false;
+let reproductivaAnterior = null;
 
 function dato(valor, nombre) {
   return el("div", { className: "dato" }, el("div", { className: "dato-valor" }, valor), el("div", { className: "dato-nombre" }, nombre));
@@ -16,16 +17,17 @@ function dato(valor, nombre) {
 
 function mostrarFicha() {
   const a = ficha.animal;
-  document.title = `Caravana ${a.caravana} · AgroApp`;
-  titulo.replaceChildren(`Caravana ${a.caravana} `, pillDeOpcion(opciones.categorias_animal, a.categoria));
+  const nombre = `${a.es_grupo ? "Grupo" : "Caravana"} ${a.caravana}`;
+  document.title = `${nombre} · AgroApp`;
+  titulo.replaceChildren(`${nombre} `, pillEspecie(a), " ", pill(a.categoria));
   if (a.estado !== "activo") titulo.append(" ", pill(opciones.estados_animal[a.estado], "gris"));
   document.getElementById("subtitulo").textContent = [a.raza, a.rodeo && `rodeo ${a.rodeo}`, edad(a.fecha_nacimiento)].filter(Boolean).join(" · ");
   document.getElementById("acciones-ficha").hidden = false;
 
-  const hembra = esHembra(a.categoria);
   const resumen = document.getElementById("resumen");
   resumen.replaceChildren();
-  if (hembra) {
+  if (a.es_grupo) resumen.append(dato(formatearCantidad(a.cantidad), "Animales en el grupo"));
+  if (a.reproductiva) {
     resumen.append(dato(opciones.estados_reproductivos[a.estado_reproductivo], "Estado reproductivo"));
     if (a.fecha_probable_parto) {
       resumen.append(dato(formatearFecha(a.fecha_probable_parto), `Parto probable · ${describirDias(diasHasta(a.fecha_probable_parto))}`));
@@ -35,7 +37,9 @@ function mostrarFicha() {
   resumen.append(dato(ficha.eventos.length, "Eventos"));
 
   const campos = [
-    ["Categoría", opciones.categorias_animal[a.categoria]],
+    ["Especie", a.especie],
+    ["Categoría", a.categoria],
+    ...(a.es_grupo ? [["Cantidad", formatearCantidad(a.cantidad)]] : []),
     ["Raza", a.raza],
     ["Rodeo", a.rodeo],
     ["Nacimiento", a.fecha_nacimiento ? `${formatearFecha(a.fecha_nacimiento)} (${edad(a.fecha_nacimiento)})` : ""],
@@ -56,7 +60,8 @@ function mostrarFicha() {
 
   // Eventos: solo si está activo.
   document.getElementById("tarjeta-evento").hidden = a.estado !== "activo";
-  document.getElementById("tarjeta-crias").hidden = !hembra;
+  // Crías: solo de una hembra suelta (no de un grupo).
+  document.getElementById("tarjeta-crias").hidden = !(a.sexo === "hembra" && !a.es_grupo);
   // Si hay eventos, no se puede eliminar (se da de baja editando la situación).
   const botonEliminar = document.getElementById("boton-eliminar");
   botonEliminar.hidden = ficha.eventos.length > 0 || ficha.crias.length > 0;
@@ -110,7 +115,7 @@ function mostrarCrias() {
         "tr",
         {},
         el("td", {}, el("a", { href: `animal.html?id=${c.id}`, className: "fuerte" }, c.caravana)),
-        el("td", {}, pillDeOpcion(opciones.categorias_animal, c.categoria)),
+        el("td", {}, c.categoria),
         el("td", {}, c.fecha_nacimiento ? `${formatearFecha(c.fecha_nacimiento)} (${edad(c.fecha_nacimiento)})` : "—"),
         el("td", {}, opciones.estados_animal[c.estado]),
       ),
@@ -120,7 +125,7 @@ function mostrarCrias() {
 
 async function cargar() {
   try {
-    const [datos, animales] = await Promise.all([api("GET", `/animales/${ANIMAL_ID}`), api("GET", "/animales")]);
+    const [datos, animales] = await Promise.all([api("GET", `/animales/${ANIMAL_ID}`), api("GET", "/animales"), cargarEspecies()]);
     ficha = datos;
     actualizarListasAnimal(animales);
   } catch (error) {
@@ -129,6 +134,11 @@ async function cargar() {
     return;
   }
   mostrarFicha();
+  // Si cambió (ej: se editó la categoría), se rehacen los tipos de evento posibles.
+  if (ficha.animal.reproductiva !== reproductivaAnterior) {
+    reproductivaAnterior = ficha.animal.reproductiva;
+    prepararFormEvento(opciones, !ficha.animal.reproductiva);
+  }
   mostrarEventos();
   mostrarCrias();
 }
@@ -149,9 +159,10 @@ document.getElementById("boton-editar").addEventListener("click", () => {
 
 document.getElementById("boton-cria").addEventListener("click", () => {
   creandoCria = true;
+  // La cría es de la misma especie; la categoría se elige (ternera, cordero, lechón...).
   abrirVentanaAnimal(null, {
+    especie_id: ficha.animal.especie_id,
     madre_id: ficha.animal.id,
-    categoria: "ternera",
     rodeo: ficha.animal.rodeo,
     raza: ficha.animal.raza,
     fecha_nacimiento: hoyISO(),
@@ -184,9 +195,9 @@ async function iniciar() {
     return;
   }
   opciones = await cargarOpciones();
+  await cargarEspecies();
   prepararFormAnimal(opciones);
   await cargar();
-  if (ficha) prepararFormEvento(opciones, !esHembra(ficha.animal.categoria));
   refrescarAutomaticamente(cargar);
 }
 

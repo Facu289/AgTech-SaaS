@@ -4,7 +4,7 @@
 
 ## Qué es
 Aplicación AgTech para gestionar un establecimiento: insumos, repuestos, maquinaria y
-ganadería (vacunos), y más adelante telemetría y mapas. Se usa desde **Telegram** (en el
+ganadería (cualquier especie: vacunos, ovinos, porcinos, aves...), y más adelante telemetría y mapas. Se usa desde **Telegram** (en el
 campo) y desde una **web** (carga detallada en la oficina). Las dos usan la MISMA API y la
 MISMA base: lo que se carga en una se ve en la otra.
 
@@ -87,13 +87,23 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
   hectáreas, lote, cultivo) · `vencimientos` (descripción, tipo, fecha, máquina opcional, resuelto;
   tipos licencia y suscripción/app muestran el monitor de la máquina)
   · `contactos` (nombre, rubro, empresa, teléfono, email, notas)
-- `animales`: caravana (UNIQUE), categoria, raza, rodeo, fecha_nacimiento, estado_reproductivo
-  ('', vacia, prenada), fecha_probable_parto, madre_id, estado (activo/vendido/muerto)
+- `especies` (migración 7): nombre (UNIQUE), dias_gestacion (vacío = sin preñez, ej. aves).
+  Las crea el usuario en la web (página Especies). Viene cargada "Vacuno" (283 días).
+- `categorias_animal`: especie_id, nombre, sexo (hembra / macho / ''). Cada especie tiene las suyas.
+- `animales`: caravana (se PUEDE repetir: la API pide confirmar con `confirmar_repetida`),
+  categoria_id (la categoría ya dice la especie), es_grupo + cantidad (ej: "Galpón 1", 120 gallinas;
+  un animal suelto siempre cuenta 1), raza, rodeo, fecha_nacimiento, estado_reproductivo
+  ('', vacia, prenada), fecha_probable_parto, madre_id (hembra de la misma especie), estado
+  (activo/vendido/muerto). La API devuelve además especie, categoria (nombre), sexo y
+  `reproductiva` (= hembra, suelta y de especie con gestación: la única que tiene tacto/parto).
 - `eventos_animales`: animal_id, fecha, tipo (parto, aborto, tacto, servicio, sanidad,
   observación), resultado (tacto), crias_machos, crias_hembras, detalle
 - Reglas: stock = saldo + historial en la misma transacción; un evento actualiza el animal en la
   misma transacción (parto/aborto → vacía; vaquillona que pare → vaca; tacto preñada → fecha
-  probable de parto = la indicada o último servicio + 283 días).
+  probable de parto = la indicada o último servicio + días de gestación de la especie).
+  Parto, aborto, tacto y servicio solo para animales `reproductiva`; sanidad y observación para todos.
+- Migración 7 reconstruyó `animales` (para sacar el UNIQUE de la caravana). Durante cada migración
+  las foreign keys se apagan y al final se revisan con `PRAGMA foreign_key_check`.
 - Se elimina solo lo que no tiene historial; lo demás se **archiva** (o se da de baja).
 - **Migraciones**: lista `MIGRACIONES` en database.py. Nunca editar una ya aplicada: agregar otra.
   Antes de migrar se hace un backup automático.
@@ -120,7 +130,10 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - Frontend en HTML/JS puro antes que React. Telegram = campo; Web = oficina.
 - La creación de insumos es siempre explícita (`/nuevo` o la web), para evitar duplicados.
 - Subcategorías como columna aparte (no como categorías nuevas); repuesto → máquina opcional.
-- Ganadería: vacunos, uno por caravana. Gestación 283 días. Alertas a 30 días (`opciones.py`).
+- Ganadería: especies y categorías en la BASE (las crea el usuario), no en `opciones.py`.
+  Caravana repetible con confirmación; en Telegram, si se repite, se pone la especie antes
+  (`/tacto ovino 12 preñada`). Grupos con cantidad para aves u otros manejados en lote.
+  "Vaquillona que pare → vaca" queda solo para Vacuno. Alertas a 30 días (`opciones.py`).
 - Un archivo por área (insumos / maquinaria / ganadería) en vez de un main.py gigante.
 - Filtros de tablas en el navegador (son cientos de filas); el historial de movimientos se filtra
   en el servidor (pueden ser miles).
@@ -139,6 +152,7 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - En Pydantic, un campo opcional con límite (ge=0) tiene que tener el límite en el tipo de
   adentro; si no, un campo vacío da error 500. Los tests lo detectaron.
 - Un campo vacío de un formulario llega como "" (texto vacío), no como null.
+- En las ventanas (dialog) el primer botón es "Cancelar": apretar Enter cierra sin guardar.
 
 ## Deuda técnica
 - FUTURA: la web y la API no tienen login (ok solo en local). Obligatorio antes de producción.
@@ -148,6 +162,9 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - MENOR: la búsqueda de insumos/máquinas/animales filtra en Python (ok para cientos).
 - MENOR: `insumos.creado_en` en UTC (el resto en hora local).
 - MENOR: borrar un evento de un animal no deshace su cambio de estado (se corrige editando).
+- MENOR: en las ventanas, Enter = Cancelar (el primer botón del form). Habría que poner
+  type="button" al Cancelar o mover Guardar primero.
+- MENOR: los grupos no tienen historial de altas/bajas de cabezas: la cantidad se edita a mano.
 - MENOR: lo pendiente de confirmar por Telegram vive en memoria (se pierde si se reinicia el backend).
 - A TENER EN CUENTA: los mensajes en lenguaje natural (y los nombres de insumos/máquinas/caravanas)
   se envían a Google (Gemini). Los comandos con "/" no salen de la PC.
@@ -156,6 +173,7 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 Fases 1 a 3 hechas, más: rediseño con Inicio y menú plegable, exportar a Excel, service
 programado por horas y lenguaje natural por Telegram (Gemini).
 También: repuestos asignables a varias máquinas (migración 5) y N° de serie del
-monitor en la máquina para licencias de piloto y suscripciones (migración 6). Se usa con datos reales.
+monitor en la máquina para licencias de piloto y suscripciones (migración 6), y especies que crea
+el usuario + grupos de animales + caravana repetible (migración 7). Se usa con datos reales.
 **Siguiente**: NAS (en otro chat) → GitHub → Docker → mudar la base → login web → WhatsApp.
 El detalle está en `docs/INICIO_PROYECTO.md`.

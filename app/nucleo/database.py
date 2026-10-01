@@ -229,6 +229,79 @@ MIGRACIONES = [
     [
         "ALTER TABLE maquinas ADD COLUMN serie_monitor TEXT NOT NULL DEFAULT ''",
     ],
+    # 7) Especies: vacunos, ovinos, porcinos, gallinas... las crea el usuario.
+    #    - Cada especie tiene sus categorías, y cada categoría dice si es hembra o macho.
+    #    - Los días de gestación son de la especie (vacas 283). Vacío = sin preñez (aves).
+    #    - Un animal puede ser un GRUPO (ej: 120 gallinas ponedoras) con una cantidad.
+    #    - La caravana ya no es única: se puede repetir entre animales (la app avisa antes).
+    #    Para sacar el UNIQUE de la caravana hay que RECONSTRUIR la tabla animales
+    #    (SQLite no deja borrar esa restricción): tabla nueva → copiar → borrar vieja → renombrar.
+    #    Todos los animales que ya había pasan a la especie Vacuno, con su misma categoría.
+    [
+        """
+        CREATE TABLE especies (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre         TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+            dias_gestacion INTEGER CHECK (dias_gestacion IS NULL OR dias_gestacion > 0),
+            creado_en      TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+        )
+        """,
+        """
+        CREATE TABLE categorias_animal (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            especie_id INTEGER NOT NULL REFERENCES especies(id),
+            nombre     TEXT    NOT NULL,
+            sexo       TEXT    NOT NULL DEFAULT '' CHECK (sexo IN ('hembra', 'macho', '')),
+            creado_en  TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+        )
+        """,
+        "CREATE UNIQUE INDEX idx_categorias_nombre ON categorias_animal(especie_id, nombre COLLATE NOCASE)",
+        "INSERT INTO especies (id, nombre, dias_gestacion) VALUES (1, 'Vacuno', 283)",
+        """
+        INSERT INTO categorias_animal (especie_id, nombre, sexo) VALUES
+            (1, 'Vaca', 'hembra'), (1, 'Vaquillona', 'hembra'), (1, 'Ternera', 'hembra'),
+            (1, 'Ternero', 'macho'), (1, 'Novillo', 'macho'), (1, 'Toro', 'macho')
+        """,
+        # Por las dudas: si algún animal tenía otra categoría, se crea (sin sexo) para no perderlo.
+        """
+        INSERT INTO categorias_animal (especie_id, nombre)
+        SELECT 1, MIN(categoria) FROM animales
+        WHERE lower(categoria) NOT IN (SELECT lower(nombre) FROM categorias_animal)
+        GROUP BY lower(categoria)
+        """,
+        """
+        CREATE TABLE animales_nueva (
+            id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+            caravana             TEXT    NOT NULL COLLATE NOCASE,
+            categoria_id         INTEGER NOT NULL REFERENCES categorias_animal(id),
+            es_grupo             INTEGER NOT NULL DEFAULT 0 CHECK (es_grupo IN (0, 1)),
+            cantidad             INTEGER NOT NULL DEFAULT 1 CHECK (cantidad >= 0),
+            raza                 TEXT    NOT NULL DEFAULT '',
+            rodeo                TEXT    NOT NULL DEFAULT '',
+            fecha_nacimiento     TEXT,
+            estado_reproductivo  TEXT    NOT NULL DEFAULT ''
+                                 CHECK (estado_reproductivo IN ('', 'vacia', 'prenada')),
+            fecha_probable_parto TEXT,
+            madre_id             INTEGER REFERENCES animales(id),
+            estado               TEXT    NOT NULL DEFAULT 'activo'
+                                 CHECK (estado IN ('activo', 'vendido', 'muerto')),
+            observaciones        TEXT    NOT NULL DEFAULT '',
+            creado_en            TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+        )
+        """,
+        """
+        INSERT INTO animales_nueva (id, caravana, categoria_id, raza, rodeo, fecha_nacimiento,
+            estado_reproductivo, fecha_probable_parto, madre_id, estado, observaciones, creado_en)
+        SELECT a.id, a.caravana, c.id, a.raza, a.rodeo, a.fecha_nacimiento,
+            a.estado_reproductivo, a.fecha_probable_parto, a.madre_id, a.estado, a.observaciones, a.creado_en
+        FROM animales a
+        JOIN categorias_animal c ON c.especie_id = 1 AND lower(c.nombre) = lower(a.categoria)
+        """,
+        "DROP TABLE animales",
+        "ALTER TABLE animales_nueva RENAME TO animales",
+        "CREATE INDEX idx_animales_caravana ON animales(caravana)",
+        "CREATE INDEX idx_animales_categoria ON animales(categoria_id)",
+    ],
 ]
 
 
@@ -251,12 +324,20 @@ def migrar():
 
     for numero in range(version + 1, len(MIGRACIONES) + 1):
         with conectar() as conexion:
+            # Durante la migración se apagan las relaciones (foreign keys): si no,
+            # reconstruir una tabla (borrar la vieja) fallaría. Se apaga ANTES del
+            # BEGIN porque SQLite no deja cambiarlo dentro de una transacción.
+            conexion.execute("PRAGMA foreign_keys = OFF")
             # BEGIN explícito: así hasta los CREATE/ALTER quedan dentro de la
             # transacción. Si algo falla, no se aplica NADA de esta migración.
             if not conexion.in_transaction:
                 conexion.execute("BEGIN")
             for sentencia in MIGRACIONES[numero - 1]:
                 conexion.execute(sentencia)
+            # Antes de guardar, revisamos que ninguna relación haya quedado rota.
+            rotas = conexion.execute("PRAGMA foreign_key_check").fetchall()
+            if rotas:
+                raise RuntimeError(f"La migración {numero} dejó {len(rotas)} relaciones rotas: no se aplicó.")
             conexion.execute(f"PRAGMA user_version = {numero}")
         print(f"Base de datos actualizada a la versión {numero}.")
 

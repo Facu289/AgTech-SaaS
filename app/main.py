@@ -85,6 +85,12 @@ def error_evento(request: Request, error):
     return _error(400, str(error))
 
 
+@app.exception_handler(ganaderia_rutas.CaravanaRepetida)
+def error_caravana_repetida(request: Request, error):
+    """409 con una marca extra: la web pregunta "¿guardarlo igual?" y reintenta confirmando."""
+    return JSONResponse(status_code=409, content={"detail": str(error), "caravana_repetida": True})
+
+
 @app.exception_handler(sqlite3.IntegrityError)
 def error_integridad(request: Request, error):
     """Última red de seguridad: la base rechazó el dato (nombre repetido, relación inválida...)."""

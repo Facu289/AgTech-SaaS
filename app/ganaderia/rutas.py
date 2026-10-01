@@ -1,25 +1,53 @@
-"""Ganadería (vacunos, uno por caravana): modelos de datos, reglas y endpoints de la API."""
+"""Ganadería (especies que crea el usuario; animales por caravana o en grupo): modelos, reglas y endpoints."""
 from datetime import date, timedelta
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.ganaderia import db as ganaderia_db
-from app.nucleo.opciones import CATEGORIAS_ANIMAL, DIAS_ALERTA, ESTADOS_ANIMAL, ESTADOS_REPRODUCTIVOS, TIPOS_EVENTO
+from app.nucleo.opciones import DIAS_ALERTA, ESTADOS_ANIMAL, ESTADOS_REPRODUCTIVOS, SEXOS_ANIMAL, TIPOS_EVENTO
 from app.nucleo.tipos import FechaOpcional, IdOpcional, opcion
 from app.nucleo.utilidades import normalizar_texto
 
 router = APIRouter(tags=["Ganadería"])
 
 
+class CaravanaRepetida(Exception):
+    """Ya hay otro animal con esa caravana: se pide confirmación antes de guardar."""
+
+    def __init__(self, existentes):
+        self.existentes = existentes
+        descripcion = ", ".join(f"{a['especie']} ({a['categoria'].lower()})" for a in existentes)
+        super().__init__(
+            f"Ya hay {'un animal' if len(existentes) == 1 else f'{len(existentes)} animales'} con la caravana "
+            f"'{existentes[0]['caravana']}': {descripcion}. ¿Querés guardarlo igual?"
+        )
+
+
 # ---------- Modelos ----------
+
+class EspecieDatos(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    nombre: str = Field(min_length=1, max_length=40)
+    dias_gestacion: int | None = Field(default=None, gt=0, le=800)  # Vacío = sin preñez (aves).
+
+
+class CategoriaDatos(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    nombre: str = Field(min_length=1, max_length=40)
+    sexo: opcion(SEXOS_ANIMAL) = ""
+
 
 class AnimalDatos(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    caravana: str = Field(min_length=1, max_length=30)
-    categoria: opcion(CATEGORIAS_ANIMAL)
+    caravana: str = Field(min_length=1, max_length=60)  # Caravana, o nombre del grupo.
+    categoria_id: int  # La categoría ya dice de qué especie es.
+    es_grupo: bool = False
+    cantidad: int = Field(default=1, ge=0, le=1_000_000)  # Solo para grupos.
     raza: str = Field(default="", max_length=60)
     rodeo: str = Field(default="", max_length=60)  # Lote, potrero o grupo.
     fecha_nacimiento: FechaOpcional = None
@@ -28,6 +56,8 @@ class AnimalDatos(BaseModel):
     madre_id: IdOpcional = None
     estado: opcion(ESTADOS_ANIMAL) = "activo"
     observaciones: str = Field(default="", max_length=1000)
+    # La caravana se puede repetir, pero hay que confirmarlo (así no se repite por error).
+    confirmar_repetida: bool = False
 
 
 class EventoNuevo(BaseModel):
@@ -36,8 +66,8 @@ class EventoNuevo(BaseModel):
     fecha: date = Field(default_factory=date.today)
     tipo: opcion(TIPOS_EVENTO)
     resultado: Literal["", "prenada", "vacia"] = ""  # Solo para tacto.
-    crias_machos: int = Field(default=0, ge=0, le=5)  # Solo para parto.
-    crias_hembras: int = Field(default=0, ge=0, le=5)
+    crias_machos: int = Field(default=0, ge=0, le=20)  # Solo para parto (cerdas: camadas grandes).
+    crias_hembras: int = Field(default=0, ge=0, le=20)
     detalle: str = Field(default="", max_length=500)
     fecha_probable_parto: FechaOpcional = None  # Opcional en un tacto positivo.
 
@@ -50,25 +80,66 @@ class EventoNuevo(BaseModel):
 
 # ---------- Reglas compartidas ----------
 
-def animal_por_caravana(caravana: str, excluir_id=None):
+def animales_por_caravana(caravana: str, especie_id=None, excluir_id=None):
+    """Todos los animales con esa caravana exacta (sin importar mayúsculas ni tildes)."""
     buscada = normalizar_texto(caravana)
-    for a in ganaderia_db.listar_animales(incluir_bajas=True):
-        if a["id"] != excluir_id and normalizar_texto(a["caravana"]) == buscada:
-            return a
-    return None
+    return [
+        a for a in ganaderia_db.listar_animales(incluir_bajas=True)
+        if a["id"] != excluir_id and normalizar_texto(a["caravana"]) == buscada
+        and (especie_id is None or a["especie_id"] == especie_id)
+    ]
 
 
-def _revisar_caravana(caravana, excluir_id=None):
-    existente = animal_por_caravana(caravana, excluir_id)
-    if existente:
-        raise HTTPException(status_code=409, detail=f"Ya existe un animal con la caravana '{existente['caravana']}'")
+def _revisar_caravana(datos: AnimalDatos, excluir_id=None):
+    if datos.confirmar_repetida:
+        return
+    existentes = animales_por_caravana(datos.caravana, excluir_id=excluir_id)
+    if existentes:
+        raise CaravanaRepetida(existentes)
 
 
 def partos_para_alertar():
     return ganaderia_db.partos_proximos(date.today() + timedelta(days=DIAS_ALERTA))
 
 
-# ---------- Endpoints ----------
+# ---------- Endpoints: especies y categorías ----------
+
+@router.get("/especies")
+def ver_especies():
+    return ganaderia_db.listar_especies()
+
+
+@router.post("/especies", status_code=201)
+def crear_especie(datos: EspecieDatos):
+    return ganaderia_db.agregar_especie(datos.nombre, datos.dias_gestacion)
+
+
+@router.put("/especies/{especie_id}")
+def editar_especie(especie_id: int, datos: EspecieDatos):
+    return ganaderia_db.editar_especie(especie_id, datos.nombre, datos.dias_gestacion)
+
+
+@router.delete("/especies/{especie_id}", status_code=204)
+def eliminar_especie(especie_id: int):
+    ganaderia_db.eliminar_especie(especie_id)
+
+
+@router.post("/especies/{especie_id}/categorias", status_code=201)
+def crear_categoria(especie_id: int, datos: CategoriaDatos):
+    return ganaderia_db.agregar_categoria(especie_id, datos.nombre, datos.sexo)
+
+
+@router.put("/categorias-animal/{categoria_id}")
+def editar_categoria(categoria_id: int, datos: CategoriaDatos):
+    return ganaderia_db.editar_categoria(categoria_id, datos.nombre, datos.sexo)
+
+
+@router.delete("/categorias-animal/{categoria_id}", status_code=204)
+def eliminar_categoria(categoria_id: int):
+    ganaderia_db.eliminar_categoria(categoria_id)
+
+
+# ---------- Endpoints: animales ----------
 
 @router.get("/animales")
 def ver_animales(incluir_bajas: bool = False):
@@ -77,7 +148,7 @@ def ver_animales(incluir_bajas: bool = False):
 
 @router.post("/animales", status_code=201)
 def crear_animal(datos: AnimalDatos):
-    _revisar_caravana(datos.caravana)
+    _revisar_caravana(datos)
     return ganaderia_db.agregar_animal(datos.model_dump())
 
 
@@ -95,7 +166,7 @@ def ver_ficha_animal(animal_id: int):
 
 @router.put("/animales/{animal_id}")
 def editar_animal(animal_id: int, datos: AnimalDatos):
-    _revisar_caravana(datos.caravana, animal_id)
+    _revisar_caravana(datos, animal_id)
     return ganaderia_db.editar_animal(animal_id, datos.model_dump())
 
 

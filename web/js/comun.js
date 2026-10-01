@@ -117,7 +117,14 @@ async function api(metodo, url, datos) {
   } catch {
     throw new Error("No se pudo conectar con el servidor. ¿Está corriendo el backend?");
   }
-  if (!respuesta.ok) throw new Error(await leerError(respuesta));
+  if (!respuesta.ok) {
+    // Además del texto, el error guarda el código y los datos que mandó el servidor
+    // (ej: "caravana_repetida": así la web puede preguntar "¿guardar igual?").
+    const error = new Error(await leerError(respuesta.clone()));
+    error.estado = respuesta.status;
+    error.datos = await respuesta.json().catch(() => ({}));
+    throw error;
+  }
   return respuesta.status === 204 ? null : respuesta.json();
 }
 
@@ -139,7 +146,14 @@ async function exportarExcel(nombre, titulo, columnas, filas) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nombre, titulo, columnas, filas }),
     });
-    if (!respuesta.ok) throw new Error(await leerError(respuesta));
+    if (!respuesta.ok) {
+    // Además del texto, el error guarda el código y los datos que mandó el servidor
+    // (ej: "caravana_repetida": así la web puede preguntar "¿guardar igual?").
+    const error = new Error(await leerError(respuesta.clone()));
+    error.estado = respuesta.status;
+    error.datos = await respuesta.json().catch(() => ({}));
+    throw error;
+  }
     descargarArchivo(await respuesta.blob(), `${nombre}_${hoyISO()}.xlsx`);
     avisar(`📥 Descargado: ${filas.length} fila(s) en Excel.`);
   } catch (error) {
@@ -439,7 +453,10 @@ const MENU = [
   },
   {
     titulo: "Ganadería",
-    enlaces: [{ pagina: "animales", texto: "Animales", href: "animales.html", icono: "vaca", contador: "partos" }],
+    enlaces: [
+      { pagina: "animales", texto: "Animales", href: "animales.html", icono: "vaca", contador: "partos" },
+      { pagina: "especies", texto: "Especies", href: "especies.html", icono: "lista" },
+    ],
   },
 ];
 

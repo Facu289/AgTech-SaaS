@@ -129,6 +129,7 @@ def hojas_completas() -> list:
     nombre_maquina = {m["id"]: m["nombre"] for m in maquinas}
     animales = ganaderia_db.listar_animales(incluir_bajas=True)
     caravana = {a["id"]: a["caravana"] for a in animales}
+    especie = {a["id"]: a["especie"] for a in animales}
 
     mantenimientos, trabajos, eventos = [], [], []
     for m in maquinas:
@@ -169,14 +170,14 @@ def hojas_completas() -> list:
         ("Contactos", ["Nombre", "Rubro", "Empresa", "Teléfono", "Email", "Notas"],
          [[c["nombre"], _etiqueta(opciones.RUBROS_CONTACTO, c["rubro"]), c["empresa"], c["telefono"], c["email"],
            c["notas"]] for c in maquinaria_db.listar_contactos()]),
-        ("Animales", ["Caravana", "Categoría", "Raza", "Rodeo", "Nacimiento", "Estado reproductivo",
-                      "Parto probable", "Partos", "Madre", "Situación", "Observaciones"],
-         [[a["caravana"], _etiqueta(opciones.CATEGORIAS_ANIMAL, a["categoria"]), a["raza"], a["rodeo"],
-           a["fecha_nacimiento"], _etiqueta(E, a["estado_reproductivo"]) if a["categoria"] in opciones.HEMBRAS else "",
+        ("Animales", ["Caravana / grupo", "Especie", "Categoría", "Cabezas", "Raza", "Rodeo", "Nacimiento",
+                      "Estado reproductivo", "Parto probable", "Partos", "Madre", "Situación", "Observaciones"],
+         [[a["caravana"], a["especie"], a["categoria"], a["cantidad"], a["raza"], a["rodeo"],
+           a["fecha_nacimiento"], _etiqueta(E, a["estado_reproductivo"]) if a["reproductiva"] else "",
            a["fecha_probable_parto"], a["partos"], a["madre_caravana"] or "",
            _etiqueta(opciones.ESTADOS_ANIMAL, a["estado"]), a["observaciones"]] for a in animales]),
-        ("Eventos de animales", ["Fecha", "Caravana", "Evento", "Resultado", "Crías machos", "Crías hembras", "Detalle"],
-         [[e["fecha"], caravana.get(e["animal_id"]), _etiqueta(opciones.TIPOS_EVENTO, e["tipo"]),
+        ("Eventos de animales", ["Fecha", "Caravana", "Especie", "Evento", "Resultado", "Crías machos", "Crías hembras", "Detalle"],
+         [[e["fecha"], caravana.get(e["animal_id"]), especie.get(e["animal_id"]), _etiqueta(opciones.TIPOS_EVENTO, e["tipo"]),
            _etiqueta(E, e["resultado"]) if e["resultado"] else "", e["crias_machos"] or None,
            e["crias_hembras"] or None, e["detalle"]] for e in sorted(eventos, key=lambda x: x["fecha"], reverse=True)]),
     ]

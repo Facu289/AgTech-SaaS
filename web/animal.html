@@ -35,9 +35,9 @@
           <label class="campo"><span>Fecha</span>
             <input name="fecha" type="date" required></label>
           <label class="campo" data-solo-evento="parto"><span>Crías machos</span>
-            <input name="crias_machos" type="number" min="0" max="5" value="0"></label>
+            <input name="crias_machos" type="number" min="0" max="20" value="0"></label>
           <label class="campo" data-solo-evento="parto"><span>Crías hembras</span>
-            <input name="crias_hembras" type="number" min="0" max="5" value="0"></label>
+            <input name="crias_hembras" type="number" min="0" max="20" value="0"></label>
           <label class="campo" data-solo-evento="tacto"><span>Resultado</span>
             <select name="resultado">
               <option value="prenada">Preñada</option>
@@ -101,17 +101,22 @@
         <h2 id="t-animal">Nuevo animal</h2>
       </div>
       <div class="campos" style="--columnas: 1fr 1fr 1fr">
-        <label class="campo"><span>Caravana</span>
-          <input name="caravana" required maxlength="30" autocomplete="off" placeholder="Ej: 1234"></label>
+        <label class="campo"><span>Especie</span>
+          <select name="especie_id" required></select></label>
         <label class="campo"><span>Categoría</span>
-          <select name="categoria" required data-categorias-animal></select></label>
+          <select name="categoria_id" required></select></label>
+        <label class="casilla" style="align-self:end"><input type="checkbox" name="es_grupo"> Es un grupo de animales</label>
+        <label class="campo"><span data-texto-caravana>Caravana</span>
+          <input name="caravana" required maxlength="60" autocomplete="off" placeholder="Ej: 1234 o Galpón 1"></label>
+        <label class="campo" data-solo-grupo><span>Cantidad de animales</span>
+          <input name="cantidad" type="number" min="0" step="1" value="1"></label>
         <label class="campo"><span>Raza</span>
-          <input name="raza" maxlength="60" list="lista-razas" autocomplete="off" placeholder="Ej: Angus"></label>
+          <input name="raza" maxlength="60" list="lista-razas" autocomplete="off" placeholder="Ej: Angus, Merino, Duroc"></label>
         <label class="campo"><span>Rodeo / potrero</span>
           <input name="rodeo" maxlength="60" list="lista-rodeos" autocomplete="off" placeholder="Ej: Norte"></label>
-        <label class="campo"><span>Fecha de nacimiento</span>
+        <label class="campo" data-solo-individual><span>Fecha de nacimiento</span>
           <input name="fecha_nacimiento" type="date"></label>
-        <label class="campo"><span>Madre</span>
+        <label class="campo" data-solo-individual><span>Madre</span>
           <select name="madre_id" data-madres></select></label>
         <label class="campo" data-solo-hembra><span>Estado reproductivo</span>
           <select name="estado_reproductivo" data-estados-reproductivos></select></label>

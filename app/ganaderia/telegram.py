@@ -1,11 +1,17 @@
-"""Comandos de Telegram de animales: /animales, /animal, /parto, /aborto, /tacto, /servicio."""
-from collections import Counter
+"""Comandos de Telegram de animales: /animales, /animal, /parto, /aborto, /tacto, /servicio.
+
+La caravana se puede repetir entre animales (ej: la vaca 12 y la oveja 12). Si hay más
+de uno, el bot pregunta y se aclara poniendo la especie antes: /animal ovino 12
+"""
+from collections import Counter, defaultdict
 from datetime import date
 
 from app.ganaderia import db as ganaderia_db
-from app.ganaderia.rutas import animal_por_caravana, partos_para_alertar
-from app.nucleo.opciones import CATEGORIAS_ANIMAL, DIAS_ALERTA, ESTADOS_REPRODUCTIVOS, HEMBRAS, TIPOS_EVENTO
+from app.ganaderia.rutas import animales_por_caravana, partos_para_alertar
+from app.nucleo.opciones import DIAS_ALERTA, ESTADOS_REPRODUCTIVOS, TIPOS_EVENTO
 from app.nucleo.utilidades import describir_dias, dias_hasta, formatear_fecha, leer_fecha, normalizar_texto, separar_motivo
+
+MAXIMO_CRIAS = 20
 
 
 def _describir_crias(machos: int, hembras: int) -> str:
@@ -19,23 +25,62 @@ def _describir_crias(machos: int, hembras: int) -> str:
     return nombre + " y ".join(partes) if partes else "sin crías registradas"
 
 
-def _elegir_animal(caravana: str):
-    """Busca por caravana EXACTA (sin importar mayúsculas). Si no, sugiere parecidas."""
-    animal = animal_por_caravana(caravana)
-    if animal:
-        if animal["estado"] != "activo":
-            return None, f"La caravana {animal['caravana']} está dada de baja ({animal['estado']})."
-        return animal, None
+def _singular(texto: str) -> str:
+    """'vacas' -> 'vaca', 'ovinos' -> 'ovino', 'preñadas' -> 'prenada' (sin tildes)."""
+    return normalizar_texto(texto).rstrip("s")
+
+
+def _buscar_especie(palabra: str):
+    """Devuelve la especie cuyo nombre coincide con la palabra (acepta plural), o None."""
+    buscada = _singular(palabra)
+    for especie in ganaderia_db.listar_especies():
+        if _singular(especie["nombre"]) == buscada:
+            return especie
+    return None
+
+
+def _separar_especie(argumento: str):
+    """'ovino 12 preñada' -> (especie Ovino, '12 preñada'). Si no empieza con una especie, (None, argumento)."""
+    palabras = argumento.split(maxsplit=1)
+    if len(palabras) == 2:
+        especie = _buscar_especie(palabras[0])
+        if especie:
+            return especie, palabras[1]
+    return None, argumento
+
+
+def _elegir_animal(caravana: str, especie=None):
+    """Busca por caravana EXACTA (sin importar mayúsculas). Si no, sugiere parecidas.
+
+    Si hay varios con la misma caravana, NO adivina: pide la especie.
+    """
+    especie_id = especie["id"] if especie else None
+    encontrados = animales_por_caravana(caravana, especie_id)
+    activos = [a for a in encontrados if a["estado"] == "activo"]
+    if len(activos) == 1:
+        return activos[0], None
+    if len(activos) > 1:
+        lineas = [f"Hay {len(activos)} animales con la caravana {caravana}:"]
+        lineas += [f"  • {a['especie']} — {a['categoria'].lower()}" for a in activos]
+        ejemplo = normalizar_texto(activos[0]["especie"])
+        lineas.append(f"Escribí la especie antes de la caravana. Ejemplo: {ejemplo} {caravana}")
+        return None, "\n".join(lineas)
+    if encontrados:
+        a = encontrados[0]
+        return None, f"La caravana {a['caravana']} ({a['especie']}) está dada de baja ({a['estado']})."
     buscada = normalizar_texto(caravana)
-    parecidas = [a["caravana"] for a in ganaderia_db.listar_animales() if buscada in normalizar_texto(a["caravana"])]
-    texto = f"❌ No encontré la caravana '{caravana}'."
+    parecidas = [a["caravana"] for a in ganaderia_db.listar_animales()
+                 if buscada in normalizar_texto(a["caravana"]) and (especie_id is None or a["especie_id"] == especie_id)]
+    texto = f"❌ No encontré la caravana '{caravana}'" + (f" en {especie['nombre']}." if especie else ".")
     if parecidas:
         texto += "\n¿Es alguna de estas? " + ", ".join(parecidas[:10])
     return None, texto
 
 
 def _linea_animal(a) -> str:
-    texto = f"• {a['caravana']} — {CATEGORIAS_ANIMAL.get(a['categoria'], a['categoria']).lower()}"
+    texto = f"• {a['caravana']} — {a['categoria'].lower()} ({a['especie']})"
+    if a["es_grupo"]:
+        texto += f" · grupo de {a['cantidad']}"
     if a["rodeo"]:
         texto += f", {a['rodeo']}"
     if a["estado_reproductivo"] == "prenada":
@@ -47,34 +92,44 @@ def _linea_animal(a) -> str:
     return texto
 
 
+def _resumen(animales) -> str:
+    """Cuántos hay por especie y categoría. Los grupos suman su cantidad de cabezas."""
+    por_especie = defaultdict(Counter)
+    for a in animales:
+        por_especie[a["especie"]][a["categoria"]] += a["cantidad"]
+    total = sum(a["cantidad"] for a in animales)
+    lineas = [f"🐄 {total} animales activos"]
+    for especie, categorias in sorted(por_especie.items()):
+        detalle = ", ".join(f"{nombre.lower()} {cantidad}" for nombre, cantidad in categorias.most_common())
+        lineas.append(f"  • {especie}: {sum(categorias.values())} ({detalle})")
+    reproductivas = [a for a in animales if a["reproductiva"]]
+    if reproductivas:
+        prenadas = sum(a["estado_reproductivo"] == "prenada" for a in reproductivas)
+        vacias = sum(a["estado_reproductivo"] == "vacia" for a in reproductivas)
+        lineas.append(f"\nHembras: {prenadas} preñadas · {vacias} vacías")
+    partos = partos_para_alertar()
+    if partos:
+        lineas.append(f"🍼 Partos en los próximos {DIAS_ALERTA} días: {len(partos)} (ver /alertas)")
+    lineas.append("\nFiltrá con: /animales <especie> | <categoría> | preñadas | vacías | <rodeo> | <caravana>")
+    return "\n".join(lineas)
+
+
 def comando_animales(argumento: str) -> str:
-    """/animales  ->  resumen  |  /animales <filtro>  ->  lista (vacas, preñadas, rodeo norte, 12...)"""
+    """/animales  ->  resumen  |  /animales <filtro>  ->  lista (ovinos, vacas, preñadas, rodeo norte, 12...)"""
     animales = ganaderia_db.listar_animales()
     if not animales:
         return "No hay animales cargados. Cargalos desde la web: Animales → Listado."
-
     if not argumento:
-        por_categoria = Counter(a["categoria"] for a in animales)
-        lineas = [f"🐄 Rodeo: {len(animales)} animales activos"]
-        for categoria, nombre in CATEGORIAS_ANIMAL.items():
-            if por_categoria[categoria]:
-                lineas.append(f"  • {nombre}s: {por_categoria[categoria]}")
-        hembras_adultas = [a for a in animales if a["categoria"] in ("vaca", "vaquillona")]
-        prenadas = sum(a["estado_reproductivo"] == "prenada" for a in hembras_adultas)
-        vacias = sum(a["estado_reproductivo"] == "vacia" for a in hembras_adultas)
-        lineas.append(f"\nVacas y vaquillonas: {prenadas} preñadas · {vacias} vacías")
-        partos = partos_para_alertar()
-        if partos:
-            lineas.append(f"🍼 Partos en los próximos {DIAS_ALERTA} días: {len(partos)} (ver /alertas)")
-        lineas.append("\nFiltrá con: /animales vacas | preñadas | vacías | <rodeo> | <caravana>")
-        return "\n".join(lineas)
+        return _resumen(animales)
 
     filtro = normalizar_texto(argumento)
-    singular = filtro.rstrip("s")  # "vacas" -> "vaca", "preñadas" -> "prenada"
+    singular = _singular(argumento)
     if singular in ("prenada", "vacia"):
         elegidos = [a for a in animales if a["estado_reproductivo"] == singular]
-    elif singular in CATEGORIAS_ANIMAL:
-        elegidos = [a for a in animales if a["categoria"] == singular]
+    elif any(_singular(a["especie"]) == singular for a in animales):
+        elegidos = [a for a in animales if _singular(a["especie"]) == singular]
+    elif any(_singular(a["categoria"]) == singular for a in animales):
+        elegidos = [a for a in animales if _singular(a["categoria"]) == singular]
     else:
         elegidos = [
             a for a in animales
@@ -91,14 +146,26 @@ def comando_animales(argumento: str) -> str:
 
 
 def comando_animal(argumento: str) -> str:
-    """/animal <caravana>  ->  ficha y últimos eventos."""
+    """/animal [especie] <caravana>  ->  ficha y últimos eventos."""
     if not argumento:
-        return "Formato: /animal <caravana>\nEjemplo: /animal 1234"
-    animal = animal_por_caravana(argumento)
-    if animal is None:
-        return _elegir_animal(argumento)[1]
-    lineas = [f"🐄 Caravana {animal['caravana']}",
-              f"Categoría: {CATEGORIAS_ANIMAL.get(animal['categoria'], animal['categoria'])}"]
+        return "Formato: /animal <caravana>\nEjemplo: /animal 1234\nSi la caravana se repite: /animal ovino 1234"
+    especie, caravana = _separar_especie(argumento)
+    encontrados = animales_por_caravana(caravana, especie["id"] if especie else None)
+    if especie and not encontrados and animales_por_caravana(argumento):
+        # Era el nombre de un grupo que empieza como una especie (ej: "gallinas ponedoras").
+        especie, caravana = None, argumento
+        encontrados = animales_por_caravana(caravana)
+    if len(encontrados) == 1:
+        animal = encontrados[0]  # Se muestra aunque esté dado de baja.
+    else:
+        animal, error = _elegir_animal(caravana, especie)
+        if error:
+            return error
+    nombre = "Grupo" if animal["es_grupo"] else "Caravana"
+    lineas = [f"🐄 {nombre} {animal['caravana']}",
+              f"Especie: {animal['especie']} · {animal['categoria']}"]
+    if animal["es_grupo"]:
+        lineas.append(f"Cantidad: {animal['cantidad']}")
     if animal["raza"]:
         lineas.append(f"Raza: {animal['raza']}")
     if animal["rodeo"]:
@@ -107,7 +174,7 @@ def comando_animal(argumento: str) -> str:
         lineas.append(f"Nacimiento: {formatear_fecha(animal['fecha_nacimiento'])}")
     if animal["madre_caravana"]:
         lineas.append(f"Madre: {animal['madre_caravana']}")
-    if animal["categoria"] in HEMBRAS:
+    if animal["reproductiva"]:
         lineas.append(f"Estado: {ESTADOS_REPRODUCTIVOS[animal['estado_reproductivo']]}")
         if animal["fecha_probable_parto"]:
             dias = dias_hasta(animal["fecha_probable_parto"])
@@ -138,20 +205,22 @@ def _registrar(animal, tipo, **datos):
 
 
 def comando_parto(argumento: str) -> str:
-    """/parto <caravana> <crías> [- detalle]   crías: m (macho), h (hembra), mh, hh, mmh..."""
+    """/parto [especie] <caravana> <crías> [- detalle]   crías: m (macho), h (hembra), mh, hh, mmh..."""
     uso = (
         "Formato: /parto <caravana> <crías> - <detalle opcional>\n"
         "Crías: m = macho, h = hembra. Mellizos: mh, mm o hh\n"
-        "Ejemplo: /parto 1234 h\nEjemplo: /parto 1234 mh - parto difícil"
+        "Ejemplo: /parto 1234 h\nEjemplo: /parto 1234 mh - parto difícil\n"
+        "Si la caravana se repite: /parto porcino 12 mmmhhh"
     )
     principal, detalle = separar_motivo(argumento)
+    especie, principal = _separar_especie(principal)
     palabras = principal.split()
     if len(palabras) != 2 or not set(palabras[1].lower()) <= {"m", "h"}:
         return uso
     crias = palabras[1].lower()
-    if len(crias) > 5:
-        return "Máximo 5 crías por parto.\n" + uso
-    animal, error = _elegir_animal(palabras[0])
+    if len(crias) > MAXIMO_CRIAS:
+        return f"Máximo {MAXIMO_CRIAS} crías por parto.\n" + uso
+    animal, error = _elegir_animal(palabras[0], especie)
     if error:
         return error
     machos, hembras = crias.count("m"), crias.count("h")
@@ -160,16 +229,17 @@ def comando_parto(argumento: str) -> str:
         return error
     texto = f"🍼 Parto registrado: {animal['caravana']} ({_describir_crias(machos, hembras)})."
     if animal["categoria"] != actualizado["categoria"]:
-        texto += f"\nPasó de {animal['categoria']} a {actualizado['categoria']}."
+        texto += f"\nPasó de {animal['categoria'].lower()} a {actualizado['categoria'].lower()}."
     return texto + "\nPara cargar las crías con caravana, usá la web (Animales)."
 
 
 def comando_aborto(argumento: str) -> str:
-    """/aborto <caravana> [- detalle]"""
-    caravana, detalle = separar_motivo(argumento)
+    """/aborto [especie] <caravana> [- detalle]"""
+    principal, detalle = separar_motivo(argumento)
+    especie, caravana = _separar_especie(principal)
     if not caravana:
         return "Formato: /aborto <caravana> - <detalle opcional>\nEjemplo: /aborto 1234"
-    animal, error = _elegir_animal(caravana)
+    animal, error = _elegir_animal(caravana, especie)
     if error:
         return error
     _, error = _registrar(animal, "aborto", detalle=detalle)
@@ -177,12 +247,13 @@ def comando_aborto(argumento: str) -> str:
 
 
 def comando_tacto(argumento: str) -> str:
-    """/tacto <caravana> preñada|vacía [fecha probable de parto]"""
+    """/tacto [especie] <caravana> preñada|vacía [fecha probable de parto]"""
     uso = (
         "Formato: /tacto <caravana> <preñada|vacía> <fecha probable de parto opcional>\n"
         "Ejemplo: /tacto 1234 preñada 15/03/2027\nEjemplo: /tacto 1234 vacía"
     )
-    palabras = argumento.split()
+    especie, resto = _separar_especie(argumento)
+    palabras = resto.split()
     if len(palabras) not in (2, 3):
         return uso
     resultado = normalizar_texto(palabras[1])
@@ -193,7 +264,7 @@ def comando_tacto(argumento: str) -> str:
         fpp = leer_fecha(palabras[2])
         if fpp is None:
             return f"'{palabras[2]}' no es una fecha válida (usá dd/mm/aaaa).\n{uso}"
-    animal, error = _elegir_animal(palabras[0])
+    animal, error = _elegir_animal(palabras[0], especie)
     if error:
         return error
     actualizado, error = _registrar(animal, "tacto", resultado=resultado, fecha_probable_parto=fpp)
@@ -210,18 +281,19 @@ def comando_tacto(argumento: str) -> str:
 
 
 def comando_servicio(argumento: str) -> str:
-    """/servicio <caravana> [- toro o inseminación]"""
-    caravana, detalle = separar_motivo(argumento)
+    """/servicio [especie] <caravana> [- toro o inseminación]"""
+    principal, detalle = separar_motivo(argumento)
+    especie, caravana = _separar_especie(principal)
     if not caravana:
         return "Formato: /servicio <caravana> - <toro o IA opcional>\nEjemplo: /servicio 1234 - toro 55"
-    animal, error = _elegir_animal(caravana)
+    animal, error = _elegir_animal(caravana, especie)
     if error:
         return error
-    _, error = _registrar(animal, "servicio", detalle=detalle)
+    actualizado, error = _registrar(animal, "servicio", detalle=detalle)
     if error:
         return error
     return (f"Servicio registrado: {animal['caravana']}. Si después el tacto da preñada sin fecha, "
-            "calculo el parto a 283 días del servicio.")
+            f"calculo el parto a {actualizado['dias_gestacion']} días del servicio.")
 
 
 def lineas_partos(partos) -> list:
@@ -230,5 +302,6 @@ def lineas_partos(partos) -> list:
         dias = dias_hasta(a["fecha_probable_parto"])
         icono = "🔴" if dias < 0 else "🟡"
         rodeo = f" ({a['rodeo']})" if a["rodeo"] else ""
-        lineas.append(f"{icono} {a['caravana']}{rodeo}: parto {describir_dias(dias)} ({formatear_fecha(a['fecha_probable_parto'])})")
+        especie = "" if normalizar_texto(a["especie"]) == "vacuno" else f" [{a['especie']}]"
+        lineas.append(f"{icono} {a['caravana']}{especie}{rodeo}: parto {describir_dias(dias)} ({formatear_fecha(a['fecha_probable_parto'])})")
     return lineas

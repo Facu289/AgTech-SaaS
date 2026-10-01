@@ -61,7 +61,8 @@ def _instrucciones(ayuda: str) -> str:
     """El texto que le explica a Gemini qué tiene que hacer."""
     insumos = [i["nombre"] for i in insumos_db.listar_insumos()]
     maquinas = [m["nombre"] for m in maquinaria_db.listar_maquinas()]
-    caravanas = [a["caravana"] for a in ganaderia_db.listar_animales()][:500]
+    caravanas = [f'{a["caravana"]} ({a["especie"]})' for a in ganaderia_db.listar_animales()][:500]
+    especies = [e["nombre"] for e in ganaderia_db.listar_especies()]
     return f"""Sos el asistente de AgroApp, una app para un campo en Argentina.
 Tu única tarea: traducir el mensaje del usuario a comandos de la app. No hacés nada más.
 
@@ -71,7 +72,8 @@ Comandos disponibles:
 Datos cargados (usá EXACTAMENTE estos nombres cuando el usuario se refiera a ellos):
 - Insumos: {", ".join(insumos) or "(ninguno)"}
 - Máquinas: {", ".join(maquinas) or "(ninguna)"}
-- Caravanas de animales: {", ".join(caravanas) or "(ninguna)"}
+- Especies: {", ".join(especies) or "(ninguna)"}
+- Caravanas de animales (y su especie): {", ".join(caravanas) or "(ninguna)"}
 
 Reglas:
 1. Respondé SOLO con un objeto JSON, sin texto antes ni después, con esta forma:
@@ -83,6 +85,7 @@ Reglas:
 5. No inventes insumos, máquinas ni caravanas. Solo usá /nuevo si el usuario dice
    claramente que es un insumo nuevo.
 6. Crías en /parto: m = macho, h = hembra (mellizos macho y hembra = mh).
+   Si una caravana aparece en más de una especie, poné la especie antes: /tacto ovino 12 preñada
 7. Si el mensaje no tiene que ver con la app, devolvé "comandos": [] y en "pregunta"
    explicá brevemente qué podés hacer.
 """

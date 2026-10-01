@@ -56,6 +56,7 @@ agroapp/
 
 **¿Dónde toco para...?**
 - Agregar una categoría, tipo o unidad → `app/nucleo/opciones.py`
+- Agregar una especie o categoría de animal → desde la web, página **Especies** (están en la base)
 - Cambiar colores de la web → variables al principio de `web/css/estilos.css`
 - Un comando nuevo de Telegram → el `telegram.py` del área + `COMANDOS` en `app/telegram/comandos.py`
 - Una columna nueva en la base → una migración nueva al final de `MIGRACIONES` en `app/nucleo/database.py`

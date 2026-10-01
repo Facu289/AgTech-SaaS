@@ -141,17 +141,14 @@ RUBROS_CONTACTO = {
 
 # ---------- Ganadería ----------
 
-CATEGORIAS_ANIMAL = {
-    "vaca": "Vaca",
-    "vaquillona": "Vaquillona",
-    "ternera": "Ternera",
-    "ternero": "Ternero",
-    "novillo": "Novillo",
-    "toro": "Toro",
+# Las especies (vacuno, ovino, gallina...) y sus categorías las crea el usuario:
+# están en la base (tablas especies y categorias_animal), no acá.
+# Cada categoría dice su sexo: solo las hembras pueden estar preñadas.
+SEXOS_ANIMAL = {
+    "hembra": "Hembra",
+    "macho": "Macho",
+    "": "Sin especificar",
 }
-
-# Las categorías de hembras (las únicas que pueden estar preñadas).
-HEMBRAS = ("vaca", "vaquillona", "ternera")
 
 ESTADOS_REPRODUCTIVOS = {
     "": "Sin dato",
@@ -173,9 +170,6 @@ TIPOS_EVENTO = {
     "sanidad": "Sanidad",
     "observacion": "Observación",
 }
-
-# Duración promedio de la preñez en vacas (días), para la fecha probable de parto.
-DIAS_GESTACION = 283
 
 # Días de anticipación para las alertas (partos, vencimientos).
 DIAS_ALERTA = 30
@@ -208,11 +202,9 @@ def todas():
         "tipos_vencimiento": TIPOS_VENCIMIENTO,
         "tipos_con_monitor": list(TIPOS_CON_MONITOR),
         "rubros_contacto": RUBROS_CONTACTO,
-        "categorias_animal": CATEGORIAS_ANIMAL,
-        "hembras": list(HEMBRAS),
+        "sexos_animal": SEXOS_ANIMAL,
         "estados_reproductivos": ESTADOS_REPRODUCTIVOS,
         "estados_animal": ESTADOS_ANIMAL,
         "tipos_evento": TIPOS_EVENTO,
-        "dias_gestacion": DIAS_GESTACION,
         "dias_alerta": DIAS_ALERTA,
     }

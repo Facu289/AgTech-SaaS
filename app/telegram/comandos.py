@@ -62,6 +62,7 @@ AYUDA = """Comandos de AgroApp
 /tacto <caravana> <preñada|vacía> [fecha parto]
 /servicio <caravana> - toro o IA
 /aborto <caravana> - detalle
+Si una caravana se repite, poné la especie antes: /animal ovino 12
 
 📝 Otros
 /alertas - todo lo que requiere atención

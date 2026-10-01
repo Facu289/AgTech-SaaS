@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Especies · AgroApp</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="especies">
+  <main>
+    <div class="seccion-encabezado">
+      <div>
+        <h1>Especies</h1>
+        <p class="subtitulo" id="estado">Cargando…</p>
+      </div>
+      <div class="acciones">
+        <button class="boton" type="button" id="boton-nueva" data-icono="mas">Nueva especie</button>
+      </div>
+    </div>
+    <p class="ayuda">Cada especie tiene sus categorías (ej: Ovino → oveja, borrega, cordero, carnero).
+      Las hembras de una especie con <strong>días de gestación</strong> pueden tener tacto, servicio y parto;
+      dejalo vacío para aves u otras especies sin preñez.</p>
+
+    <div id="lista-especies" style="display:flex;flex-direction:column;gap:16px;margin-top:12px"></div>
+  </main>
+
+  <!-- Ventana para crear / editar una especie -->
+  <dialog class="ventana" id="ventana-especie" aria-labelledby="t-especie">
+    <form method="dialog" id="form-especie">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="vaca"></div>
+        <h2 id="t-especie">Nueva especie</h2>
+      </div>
+      <div class="campos" style="--columnas: 1fr 1fr">
+        <label class="campo"><span>Nombre</span>
+          <input name="nombre" required maxlength="40" autocomplete="off" placeholder="Ej: Ovino, Porcino, Gallina"></label>
+        <label class="campo"><span>Días de gestación (opcional)</span>
+          <input name="dias_gestacion" type="number" min="1" max="800" step="1" placeholder="Ej: ovino 150, cerda 114"></label>
+      </div>
+      <p class="ayuda">Referencia: vaca 283 · oveja/cabra 150 · cerda 114 · yegua 340 · llama 345. Aves: vacío.</p>
+      <p class="mensaje" hidden></p>
+      <div class="ventana-pie">
+        <button class="boton boton-secundario" value="cancelar">Cancelar</button>
+        <button class="boton" type="submit" data-icono="check">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Ventana para editar una categoría -->
+  <dialog class="ventana" id="ventana-categoria" aria-labelledby="t-categoria">
+    <form method="dialog" id="form-categoria">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="lista"></div>
+        <h2 id="t-categoria">Editar categoría</h2>
+      </div>
+      <div class="campos" style="--columnas: 1fr 1fr">
+        <label class="campo"><span>Nombre</span>
+          <input name="nombre" required maxlength="40" autocomplete="off"></label>
+        <label class="campo"><span>Sexo</span>
+          <select name="sexo" data-sexos></select></label>
+      </div>
+      <p class="mensaje" hidden></p>
+      <div class="ventana-pie">
+        <button class="boton boton-secundario" value="cancelar">Cancelar</button>
+        <button class="boton" type="submit" data-icono="check">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/comun.js"></script>
+  <script src="js/especies.js"></script>
+</body>
+</html>

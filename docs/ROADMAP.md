@@ -48,6 +48,8 @@
 - [x] Alertas: fecha probable de parto (tacto o servicio + 283 días)
 - [x] Páginas web (listado con resumen y filtros, ficha con historial y crías)
 - [x] Telegram: /animales, /animal, /parto, /tacto, /servicio, /aborto, /alertas
+- [x] Especies libres (ovinos, porcinos, gallinas, llamas...) con sus categorías y días de
+      gestación; página Especies; grupos con cantidad; caravana repetible con confirmación (migración 7)
 
 ## ✅ Telegram con lenguaje natural
 - [x] Mensajes sin comando interpretados con Gemini ("gasté 20 litros de glifosato en el lote 4")
@@ -64,6 +66,8 @@
 ## Después
 - [ ] Usar la app con datos reales durante unas semanas y anotar qué falta o molesta
 - [ ] Pesadas (kg por animal) y ganancia de peso
+- [ ] Grupos: registrar altas y bajas de cabezas (nacimientos, muertes, ventas) con historial
+- [ ] Aves: postura de huevos
 
 ## Futuro
 - [ ] Bot con botones: crear insumo y cargar datos respondiendo preguntas

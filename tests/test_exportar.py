@@ -31,7 +31,7 @@ def test_exportar_todo(cliente, bot):
     bot("/nuevo glifosato herbicida litros")
     bot("/entrada 20 glifosato - compra")
     cliente.post("/maquinas", json={"nombre": "JD", "tipo": "tractor"})
-    cliente.post("/animales", json={"caravana": "1234", "categoria": "vaca"})
+    cliente.post("/animales", json={"caravana": "1234", "categoria_id": 1})  # 1 = Vaca (Vacuno)
     libro = abrir(cliente.get("/exportar/completo"))
     assert libro.sheetnames == ["Insumos", "Movimientos", "Máquinas", "Services y arreglos", "Service programado",
                                 "Trabajos", "Vencimientos", "Contactos", "Animales", "Eventos de animales"]

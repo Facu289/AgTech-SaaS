@@ -99,3 +99,38 @@ def test_migracion_6_agrega_serie_del_monitor_sin_tocar_las_maquinas(tmp_path, m
     with database.conectar() as conexion:
         fila = conexion.execute("SELECT nombre, numero_serie, serie_monitor FROM maquinas").fetchone()
     assert tuple(fila) == ("Sembradora", "ABC1", "")
+
+
+def test_migracion_7_pasa_los_animales_a_vacuno_sin_perder_nada(tmp_path, monkeypatch):
+    """Los animales de antes quedan como Vacuno, con su categoría, su madre y sus eventos."""
+    import importlib
+    import sqlite3
+
+    from app.nucleo import database
+    monkeypatch.setenv("AGROAPP_DB", str(tmp_path / "v6.db"))
+    importlib.reload(database)
+    todas = database.MIGRACIONES
+    # 1) Base en la versión 6, con una vaca, su cría y un evento.
+    monkeypatch.setattr(database, "MIGRACIONES", todas[:6])
+    database.crear_tablas()
+    with database.conectar() as conexion:
+        conexion.execute("INSERT INTO animales (caravana, categoria, estado_reproductivo) VALUES ('100', 'vaca', 'vacia')")
+        conexion.execute("INSERT INTO animales (caravana, categoria, madre_id) VALUES ('100-A', 'ternera', 1)")
+        conexion.execute("INSERT INTO eventos_animales (animal_id, fecha, tipo, crias_hembras) VALUES (1, '2026-09-01', 'parto', 1)")
+    # 2) Se aplica la migración 7.
+    monkeypatch.setattr(database, "MIGRACIONES", todas[:7])
+    assert database.migraciones_pendientes() == 1
+    database.crear_tablas()
+
+    from app.ganaderia import db as ganaderia_db
+    importlib.reload(ganaderia_db)
+    animales = {a["caravana"]: a for a in ganaderia_db.listar_animales()}
+    assert (animales["100"]["especie"], animales["100"]["categoria"], animales["100"]["partos"]) == ("Vacuno", "Vaca", 1)
+    assert animales["100"]["estado_reproductivo"] == "vacia"
+    assert (animales["100-A"]["categoria"], animales["100-A"]["madre_caravana"]) == ("Ternera", "100")
+    conexion = sqlite3.connect(database.DB_PATH)
+    assert conexion.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+    assert conexion.execute("PRAGMA foreign_key_check").fetchall() == []
+    # Ahora la caravana se puede repetir (la base ya no lo impide; la app pide confirmación).
+    conexion.execute("INSERT INTO animales (caravana, categoria_id) VALUES ('100', 1)")
+    conexion.close()

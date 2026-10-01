@@ -34,7 +34,7 @@ function mostrarResumen(insumos, maquinas, animales, alertas) {
     dato("insumos.html", noRepuestos.length, "Insumos", bajos ? `${bajos} bajo el mínimo` : "Stock en orden", bajos > 0),
     dato("repuestos.html", repuestos, "Repuestos"),
     dato("maquinas.html", maquinas.length, "Máquinas", services ? `${services} service(s) para hacer` : "Services al día", services > 0),
-    dato("animales.html", activos.length, "Animales activos", `${prenadas} preñada${prenadas === 1 ? "" : "s"}`),
+    dato("animales.html", activos.reduce((total, a) => total + a.cantidad, 0), "Animales activos", `${prenadas} preñada${prenadas === 1 ? "" : "s"}`),
   );
 }
 
@@ -62,7 +62,7 @@ function mostrarAtencion(alertas) {
     items.push({ orden: s.faltan < 0 ? -1000 : 5, nodo: itemAtencion("llave", `${s.nombre} · ${s.maquina_nombre}`, `Service cada ${formatearCantidad(s.cada_horas)} h: ${texto}`, `maquina.html?id=${s.maquina_id}`, s.faltan < 0) });
   }
   for (const p of alertas.partos) {
-    items.push({ orden: p.dias, nodo: itemAtencion("vaca", `Parto · caravana ${p.caravana}`, `${describirDias(p.dias)} (${formatearFecha(p.fecha_probable_parto)})${p.rodeo ? ` · rodeo ${p.rodeo}` : ""}`, `animal.html?id=${p.id}`, p.dias < 0) });
+    items.push({ orden: p.dias, nodo: itemAtencion("vaca", `Parto · caravana ${p.caravana}${p.especie === "Vacuno" ? "" : ` (${p.especie})`}`, `${describirDias(p.dias)} (${formatearFecha(p.fecha_probable_parto)})${p.rodeo ? ` · rodeo ${p.rodeo}` : ""}`, `animal.html?id=${p.id}`, p.dias < 0) });
   }
   for (const i of alertas.stock_bajo) {
     items.push({ orden: 10, nodo: itemAtencion("caja", `Stock bajo · ${i.nombre}`, `Quedan ${formatearCantidad(i.cantidad)} ${i.unidad} (mínimo ${formatearCantidad(i.stock_minimo)})`, i.categoria === "repuesto" ? "repuestos.html?stock=bajo" : "insumos.html?stock=bajo", i.cantidad === 0) });
