@@ -50,6 +50,8 @@
 - [x] Telegram: /animales, /animal, /parto, /tacto, /servicio, /aborto, /alertas
 - [x] Especies libres (ovinos, porcinos, gallinas, llamas...) con sus categorías y días de
       gestación; página Especies; grupos con cantidad; caravana repetible con confirmación (migración 7)
+- [x] Resumen de crías: página Crías (partos, crías machos/hembras, mellizos, abortos, por especie,
+      con filtros y Excel) y /crias por Telegram. Sale de los partos: no hace falta cargar cada cría
 
 ## ✅ Telegram con lenguaje natural
 - [x] Mensajes sin comando interpretados con Gemini ("gasté 20 litros de glifosato en el lote 4")

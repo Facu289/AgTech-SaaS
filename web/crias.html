@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crías · AgroApp</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="crias">
+  <main>
+    <div class="seccion-encabezado">
+      <div>
+        <h1>Crías</h1>
+        <p class="subtitulo" id="estado">Cargando…</p>
+      </div>
+      <div class="acciones" id="acciones"></div>
+    </div>
+
+    <form class="filtros" id="filtros" role="search">
+      <label class="buscador" data-icono-lupa>
+        <input name="texto" type="search" placeholder="Buscar madre, rodeo o detalle…" aria-label="Buscar" autocomplete="off">
+      </label>
+      <select name="especie" aria-label="Especie"></select>
+      <select name="tipo" aria-label="Evento">
+        <option value="">Partos y abortos</option>
+        <option value="parto">Solo partos</option>
+        <option value="aborto">Solo abortos</option>
+      </select>
+      <label class="campo-fecha" title="Desde"><input name="desde" type="date" aria-label="Desde"></label>
+      <label class="campo-fecha" title="Hasta"><input name="hasta" type="date" aria-label="Hasta"></label>
+      <button class="boton-limpiar" type="reset">Limpiar</button>
+    </form>
+
+    <div class="resumen" id="resumen" style="margin-top:16px"></div>
+
+    <section class="tarjeta" aria-labelledby="t-especies" style="margin-top:16px">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="lista"></div>
+        <h2 id="t-especies">Por especie</h2>
+      </div>
+      <div class="contenedor-tabla">
+        <table>
+          <thead>
+            <tr>
+              <th>Especie</th><th class="numero">Partos</th><th class="numero">Crías</th><th class="numero">Machos</th>
+              <th class="numero">Hembras</th><th class="numero">Mellizos o más</th><th class="numero">Abortos</th>
+              <th class="numero">Crías por parto</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-especies"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="tarjeta" aria-labelledby="t-partos" style="margin-top:16px">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="historial"></div>
+        <h2 id="t-partos">Partos y abortos</h2>
+      </div>
+      <div class="contenedor-tabla">
+        <table>
+          <thead>
+            <tr><th>Fecha</th><th>Madre</th><th>Especie</th><th>Evento</th><th>Crías</th><th class="numero">Con caravana</th><th>Detalle</th></tr>
+          </thead>
+          <tbody id="tabla-partos"></tbody>
+        </table>
+      </div>
+      <p class="ayuda">"Con caravana" = crías de esa madre cargadas como animales (nacidas hasta 30 días antes o después del parto).
+        Para cargar una, entrá a la ficha de la madre → "Agregar cría".</p>
+    </section>
+  </main>
+
+  <script src="js/comun.js"></script>
+  <script src="js/crias.js"></script>
+</body>
+</html>

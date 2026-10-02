@@ -62,6 +62,7 @@ AYUDA = """Comandos de AgroApp
 /tacto <caravana> <preñada|vacía> [fecha parto]
 /servicio <caravana> - toro o IA
 /aborto <caravana> - detalle
+/crias [especie] - resumen de partos y crías del año
 Si una caravana se repite, poné la especie antes: /animal ovino 12
 
 📝 Otros
@@ -93,6 +94,8 @@ COMANDOS = {
     "/animal": ganaderia_tg.comando_animal,
     "/parto": ganaderia_tg.comando_parto,
     "/aborto": ganaderia_tg.comando_aborto,
+    "/crias": ganaderia_tg.comando_crias,
+    "/crías": ganaderia_tg.comando_crias,
     "/tacto": ganaderia_tg.comando_tacto,
     "/servicio": ganaderia_tg.comando_servicio,
     "/alertas": comando_alertas,

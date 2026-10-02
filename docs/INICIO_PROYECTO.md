@@ -65,7 +65,7 @@ Respondé en español (Argentina).
 - **Ganadería**: **especies que creás vos** (página Especies: vacuno, ovino, porcino, gallina,
   llama...) con sus categorías y días de gestación; animales por caravana (se puede repetir,
   la app pregunta) o **en grupo con cantidad**; partos, tacto, servicio, aborto, sanidad,
-  fecha probable de parto.
+  fecha probable de parto. Página **Crías**: resumen de partos y crías por especie (también `/crias`).
 - **Web**: diseño claro minimalista, menú izquierdo plegable, Inicio con alertas, filtros en
   todas las tablas, exportar a Excel (listado filtrado o todo).
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).

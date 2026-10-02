@@ -455,6 +455,7 @@ const MENU = [
     titulo: "Ganadería",
     enlaces: [
       { pagina: "animales", texto: "Animales", href: "animales.html", icono: "vaca", contador: "partos" },
+      { pagina: "crias", texto: "Crías", href: "crias.html", icono: "hoja" },
       { pagina: "especies", texto: "Especies", href: "especies.html", icono: "lista" },
     ],
   },

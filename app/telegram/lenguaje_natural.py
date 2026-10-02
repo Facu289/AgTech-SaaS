@@ -38,7 +38,7 @@ COMANDOS_ESCRITURA = {
 }
 COMANDOS_LECTURA = {
     "/stock", "/repuestos", "/notas", "/maquinas", "/vencimientos", "/services",
-    "/animales", "/animal", "/alertas", "/ayuda",
+    "/animales", "/animal", "/crias", "/alertas", "/ayuda",
 }
 MAXIMO_COMANDOS = 5
 MINUTOS_PARA_CONFIRMAR = 10

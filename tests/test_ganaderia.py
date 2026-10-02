@@ -212,3 +212,27 @@ def test_telegram_caravana_repetida_pide_especie(bot, cliente):
     assert "Tacto registrado" in bot("/tacto ovino 12 preñada")
     assert "Especie: Ovino" in bot("/animal ovinos 12")
     assert "• 12 — oveja (Ovino)" in bot("/animales ovinos")
+
+
+# ---------- Resumen de crías ----------
+
+def test_nacimientos_y_resumen_de_crias(bot, cliente):
+    crear_especie(cliente, "Ovino", 150, [("Oveja", "hembra"), ("Cordero", "macho")])
+    oveja = crear_animal(cliente, "oveja", "Ovino", caravana="O1")
+    vaca = crear_animal(cliente, "vaca", caravana="V1")
+    hoy = date.today()
+    evento(cliente, oveja["id"], tipo="parto", crias_machos=1, crias_hembras=1, fecha=hoy.isoformat())
+    evento(cliente, vaca["id"], tipo="aborto", fecha=hoy.isoformat())
+    # Una cría cargada con caravana, hija de la oveja: cuenta como "con caravana".
+    crear_animal(cliente, "cordero", "Ovino", caravana="O1-A", madre_id=oveja["id"], fecha_nacimiento=hoy.isoformat())
+
+    nacimientos = cliente.get("/nacimientos").json()
+    assert {(n["tipo"], n["especie"], n["madre_caravana"]) for n in nacimientos} == {("parto", "Ovino", "O1"), ("aborto", "Vacuno", "V1")}
+    parto = next(n for n in nacimientos if n["tipo"] == "parto")
+    assert (parto["crias_machos"], parto["crias_hembras"], parto["crias_con_caravana"]) == (1, 1, 1)
+
+    resumen = bot("/crias")
+    assert "Ovino: 1 partos → 2 crías (1 machos, 1 hembras)" in resumen
+    assert "1 mellizos o más" in resumen and "1 abortos" in resumen
+    assert "Vacuno" not in bot("/crias ovinos")
+    assert "No encontré la especie" in bot("/crias jirafa")

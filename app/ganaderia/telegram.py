@@ -1,4 +1,4 @@
-"""Comandos de Telegram de animales: /animales, /animal, /parto, /aborto, /tacto, /servicio.
+"""Comandos de Telegram de animales: /animales, /animal, /crias, /parto, /aborto, /tacto, /servicio.
 
 La caravana se puede repetir entre animales (ej: la vaca 12 y la oveja 12). Si hay más
 de uno, el bot pregunta y se aclara poniendo la especie antes: /animal ovino 12
@@ -294,6 +294,46 @@ def comando_servicio(argumento: str) -> str:
         return error
     return (f"Servicio registrado: {animal['caravana']}. Si después el tacto da preñada sin fecha, "
             f"calculo el parto a {actualizado['dias_gestacion']} días del servicio.")
+
+
+def comando_crias(argumento: str) -> str:
+    """/crias [especie]  ->  resumen de partos y crías de este año, por especie."""
+    anio = str(date.today().year)
+    eventos = [e for e in ganaderia_db.listar_nacimientos() if e["fecha"].startswith(anio)]
+    if argumento:
+        especie = _buscar_especie(argumento)
+        if especie is None:
+            return f"No encontré la especie '{argumento}'."
+        eventos = [e for e in eventos if e["especie_id"] == especie["id"]]
+    if not eventos:
+        return f"No hay partos ni abortos registrados en {anio}" + (f" de {argumento}." if argumento else ".")
+
+    lineas = [f"🍼 Crías {anio}" + (f" · {argumento}" if argumento else "")]
+    por_especie = defaultdict(list)
+    for e in eventos:
+        por_especie[e["especie"]].append(e)
+    for especie, lista in sorted(por_especie.items()):
+        partos = [e for e in lista if e["tipo"] == "parto"]
+        machos = sum(e["crias_machos"] for e in partos)
+        hembras = sum(e["crias_hembras"] for e in partos)
+        multiples = sum(e["crias_machos"] + e["crias_hembras"] > 1 for e in partos)
+        abortos = len(lista) - len(partos)
+        lineas.append(f"\n{especie}: {len(partos)} partos → {machos + hembras} crías ({machos} machos, {hembras} hembras)")
+        detalle = []
+        if multiples:
+            detalle.append(f"{multiples} mellizos o más")
+        if abortos:
+            detalle.append(f"{abortos} abortos")
+        if detalle:
+            lineas.append("  " + " · ".join(detalle))
+    ultimos = [e for e in eventos if e["tipo"] == "parto"][:5]
+    if ultimos:
+        lineas.append("\nÚltimos partos:")
+        for e in ultimos:
+            lineas.append(f"  • {formatear_fecha(e['fecha'])} {e['madre_caravana']} ({e['especie']}): "
+                          f"{_describir_crias(e['crias_machos'], e['crias_hembras'])}")
+    lineas.append("\nEl detalle completo está en la web: Ganadería → Crías.")
+    return "\n".join(lineas)
 
 
 def lineas_partos(partos) -> list:

@@ -371,6 +371,32 @@ def registrar_evento(animal_id, fecha, tipo, resultado="", crias_machos=0, crias
         return _obtener_animal(conexion, animal_id)
 
 
+def listar_nacimientos():
+    """Todos los partos y abortos, con los datos de la madre (para el resumen de crías).
+
+    "crias_con_caravana": cuántas crías de esa madre se cargaron como animales,
+    nacidas hasta 30 días alrededor del parto (las crías no guardan de qué parto son).
+    """
+    with conectar() as conexion:
+        return filas_a_dicts(conexion.execute(
+            """
+            SELECT ev.id, ev.fecha, ev.tipo, ev.crias_machos, ev.crias_hembras, ev.detalle,
+                   a.id AS madre_id, a.caravana AS madre_caravana, a.rodeo, a.estado AS madre_estado,
+                   c.nombre AS madre_categoria, e.id AS especie_id, e.nombre AS especie,
+                   (SELECT COUNT(*) FROM animales cria
+                     WHERE cria.madre_id = a.id AND cria.fecha_nacimiento IS NOT NULL
+                       AND abs(julianday(cria.fecha_nacimiento) - julianday(ev.fecha)) <= 30
+                   ) AS crias_con_caravana
+            FROM eventos_animales ev
+            JOIN animales a ON a.id = ev.animal_id
+            JOIN categorias_animal c ON c.id = a.categoria_id
+            JOIN especies e ON e.id = c.especie_id
+            WHERE ev.tipo IN ('parto', 'aborto')
+            ORDER BY ev.fecha DESC, ev.id DESC
+            """
+        ).fetchall())
+
+
 def eliminar_evento(evento_id):
     """Borra un evento cargado por error. OJO: no deshace el cambio de estado del animal."""
     with conectar() as conexion:

@@ -184,6 +184,12 @@ def crear_evento(animal_id: int, evento: EventoNuevo):
     )
 
 
+@router.get("/nacimientos")
+def ver_nacimientos():
+    """Partos y abortos de todas las especies: la web arma con esto el resumen de crías."""
+    return ganaderia_db.listar_nacimientos()
+
+
 @router.delete("/eventos-animales/{evento_id}", status_code=204)
 def eliminar_evento(evento_id: int):
     ganaderia_db.eliminar_evento(evento_id)

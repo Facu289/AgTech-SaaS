@@ -114,7 +114,7 @@ Stock: `/stock [filtro]` · `/repuestos [filtro]` · `/nuevo <nombre> <categorí
 Maquinaria: `/maquinas [filtro]` · `/horas <máquina> <horas>` · `/trabajo <máquina> <ha> <tipo> - lote` ·
 `/service <máquina> - desc` (si nombra un plan, lo reinicia; "- todo" = todos) · `/arreglo` ·
 `/services [máquina]` · `/vencimientos`
-Animales: `/animales [filtro]` · `/animal <caravana>` · `/parto <caravana> <m/h...> - detalle` ·
+Animales: `/animales [filtro]` · `/animal <caravana>` · `/crias [especie]` (resumen del año) · `/parto <caravana> <m/h...> - detalle` ·
 `/tacto <caravana> preñada|vacía [fecha]` · `/servicio <caravana> - toro` · `/aborto <caravana>`
 Otros: `/alertas` · `/nota` · `/notas` · `/hecha <n>` · `/ayuda`
 **Lenguaje natural**: cualquier mensaje sin "/" lo interpreta Gemini y lo traduce a estos
