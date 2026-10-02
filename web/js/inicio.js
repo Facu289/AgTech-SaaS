@@ -26,13 +26,17 @@ function dato(href, valor, nombre, extra, extraEsAlerta = false) {
 function mostrarResumen(insumos, maquinas, animales, alertas) {
   const activos = animales.filter((a) => a.estado === "activo");
   const prenadas = activos.filter((a) => a.estado_reproductivo === "prenada").length;
-  const noRepuestos = insumos.filter((i) => i.categoria !== "repuesto");
-  const repuestos = insumos.length - noRepuestos.length;
-  const bajos = alertas.stock_bajo.length;
   const services = alertas.services.length;
+  // Un cuadro por página de stock: Insumos, Químicos y Repuestos.
+  const datoStock = (hoja, nombre) => {
+    const cantidad = insumos.filter((i) => i.hoja === hoja).length;
+    const bajos = alertas.stock_bajo.filter((i) => i.hoja === hoja).length;
+    return dato(`${hoja}.html`, cantidad, nombre, bajos ? `${bajos} bajo el mínimo` : "Stock en orden", bajos > 0);
+  };
   document.getElementById("resumen").replaceChildren(
-    dato("insumos.html", noRepuestos.length, "Insumos", bajos ? `${bajos} bajo el mínimo` : "Stock en orden", bajos > 0),
-    dato("repuestos.html", repuestos, "Repuestos"),
+    datoStock("insumos", "Insumos"),
+    datoStock("quimicos", "Químicos"),
+    datoStock("repuestos", "Repuestos"),
     dato("maquinas.html", maquinas.length, "Máquinas", services ? `${services} service(s) para hacer` : "Services al día", services > 0),
     dato("animales.html", activos.reduce((total, a) => total + a.cantidad, 0), "Animales activos", `${prenadas} preñada${prenadas === 1 ? "" : "s"}`),
   );
@@ -65,7 +69,7 @@ function mostrarAtencion(alertas) {
     items.push({ orden: p.dias, nodo: itemAtencion("vaca", `Parto · caravana ${p.caravana}${p.especie === "Vacuno" ? "" : ` (${p.especie})`}`, `${describirDias(p.dias)} (${formatearFecha(p.fecha_probable_parto)})${p.rodeo ? ` · rodeo ${p.rodeo}` : ""}`, `animal.html?id=${p.id}`, p.dias < 0) });
   }
   for (const i of alertas.stock_bajo) {
-    items.push({ orden: 10, nodo: itemAtencion("caja", `Stock bajo · ${i.nombre}`, `Quedan ${formatearCantidad(i.cantidad)} ${i.unidad} (mínimo ${formatearCantidad(i.stock_minimo)})`, i.categoria === "repuesto" ? "repuestos.html?stock=bajo" : "insumos.html?stock=bajo", i.cantidad === 0) });
+    items.push({ orden: 10, nodo: itemAtencion("caja", `Stock bajo · ${i.nombre}`, `Quedan ${formatearCantidad(i.cantidad)} ${i.unidad} (mínimo ${formatearCantidad(i.stock_minimo)})`, `${i.hoja}.html?stock=bajo`, i.cantidad === 0) });
   }
   items.sort((a, b) => a.orden - b.orden);
   listaAtencion.replaceChildren(...items.map((i) => i.nodo));

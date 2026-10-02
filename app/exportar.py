@@ -139,11 +139,17 @@ def hojas_completas() -> list:
         eventos += ganaderia_db.listar_eventos(a["id"])
 
     C, E = opciones.CATEGORIAS, opciones.ESTADOS_REPRODUCTIVOS
+
+    def hoja_insumos(hoja):
+        """Insumos, Químicos y Repuestos van en hojas separadas (como en la web)."""
+        return (opciones.HOJAS_INSUMOS[hoja],
+                ["Nombre", "Categoría", "Tipo", "Cantidad", "Unidad", "Stock mínimo", "Máquinas", "Archivado"],
+                [[i["nombre"], _etiqueta(C, i["categoria"]), _subcategoria(i), i["cantidad"], i["unidad"],
+                  i["stock_minimo"], ", ".join(m["nombre"] for m in i["maquinas"]),
+                  "Sí" if i["archivado"] else "No"] for i in insumos if i["hoja"] == hoja])
+
     return [
-        ("Insumos", ["Nombre", "Categoría", "Tipo", "Cantidad", "Unidad", "Stock mínimo", "Máquinas", "Archivado"],
-         [[i["nombre"], _etiqueta(C, i["categoria"]), _subcategoria(i), i["cantidad"], i["unidad"],
-           i["stock_minimo"], ", ".join(m["nombre"] for m in i["maquinas"]),
-           "Sí" if i["archivado"] else "No"] for i in insumos]),
+        *(hoja_insumos(hoja) for hoja in opciones.HOJAS_INSUMOS),
         ("Movimientos", ["Fecha", "Insumo", "Tipo", "Cantidad", "Unidad", "Motivo"],
          [[m["fecha"], m["insumo_nombre"], m["tipo"].capitalize(), m["cantidad"], m["unidad"], m["motivo"]]
           for m in insumos_db.buscar_movimientos(limite=1_000_000)]),

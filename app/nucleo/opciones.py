@@ -69,6 +69,17 @@ SUBCATEGORIAS = {
     },
 }
 
+# Insumos, Químicos y Repuestos se ven en páginas (y hojas de Excel) separadas.
+# La "hoja" sale de la categoría: no se guarda en la base.
+# Para que los fertilizantes vayan a Químicos, sumá "fertilizante" acá.
+CATEGORIAS_QUIMICOS = ("agroquimico",)
+
+HOJAS_INSUMOS = {
+    "insumos": "Insumos",
+    "quimicos": "Químicos",
+    "repuestos": "Repuestos",
+}
+
 UNIDADES = {
     "kg": "kg",
     "litros": "litros",
@@ -188,11 +199,22 @@ def categoria_de_subcategoria(subcategoria: str):
     return None
 
 
+def hoja_de(categoria: str) -> str:
+    """En qué página va un insumo: 'repuestos', 'quimicos' o 'insumos' (todo lo demás)."""
+    if categoria == "repuesto":
+        return "repuestos"
+    if categoria in CATEGORIAS_QUIMICOS:
+        return "quimicos"
+    return "insumos"
+
+
 def todas():
     """Todo junto, para GET /opciones (lo usa la web)."""
     return {
         "categorias": CATEGORIAS,
         "subcategorias": SUBCATEGORIAS,
+        "hojas_titulos": HOJAS_INSUMOS,
+        "hojas_insumos": {hoja: [c for c in CATEGORIAS if hoja_de(c) == hoja] for hoja in HOJAS_INSUMOS},
         "unidades": UNIDADES,
         "tipos_maquina": TIPOS_MAQUINA,
         "tipos_mantenimiento": TIPOS_MANTENIMIENTO,
