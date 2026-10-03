@@ -28,6 +28,8 @@ MODULOS = [
 def app(tmp_path, monkeypatch):
     """Arranca la app con una base vacía en una carpeta temporal y devuelve el módulo app.main."""
     monkeypatch.setenv("AGROAPP_DB", str(tmp_path / "test.db"))
+    # Los backups también van a la carpeta temporal, aunque el .env diga otra cosa.
+    monkeypatch.setenv("AGROAPP_BACKUPS", str(tmp_path / "backups"))
     # Recargamos los módulos para que lean la nueva ruta de la base.
     for nombre in MODULOS:
         if nombre in sys.modules:

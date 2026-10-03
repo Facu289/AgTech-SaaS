@@ -15,3 +15,21 @@ GEMINI_MODEL=gemini-3.5-flash-lite
 AGROAPP_BOT_TOKEN=
 # Cookie de sesión solo por HTTPS (opcional). Poné 1 cuando la web esté detrás de HTTPS (Cloudflare, etc.).
 AGROAPP_COOKIE_SEGURA=
+
+# ---------- Rutas (opcional) ----------
+# En la PC no hace falta poner nada: la base va en datos/agroapp.db y los backups en datos/backups.
+# En Docker NO las uses: las pone docker-compose.yml (adentro del contenedor).
+# AGROAPP_DB=
+# AGROAPP_BACKUPS=
+
+# ---------- Docker / NAS (solo los usa docker-compose.yml) ----------
+# Carpeta del NAS donde viven la base y los backups.
+AGROAPP_CARPETA_DATOS=/srv/agroapp/datos
+# Zona horaria de los contenedores (fechas de backups, vencimientos, partos).
+AGROAPP_ZONA_HORARIA=America/Argentina/Buenos_Aires
+# Puerto del NAS para la web.
+AGROAPP_PUERTO=8000
+# Usuario y grupo del NAS dueño de la carpeta de datos. En el NAS:  id agro   (uid=... gid=...)
+AGROAPP_UID=1000
+AGROAPP_GID=1000
+# OJO: en Docker, un "$" dentro de un valor se toma como variable. Si una clave tiene "$", escribilo "$$".

@@ -1,7 +1,7 @@
 # AgroApp — Cómo seguir en un Proyecto nuevo
 
 > Resumen para retomar AgroApp desde cero en un **Proyecto** de Claude, sin depender de chats
-> anteriores. Estado al **02/10/2026**.
+> anteriores. Estado al **02/10/2026** (noche).
 
 ## 1. Armar el Proyecto
 
@@ -16,6 +16,7 @@
    | `docs/ROADMAP.md` | qué está hecho y qué falta |
    | `README.md` | cómo se arranca y "¿dónde toco para...?" |
    | `docs/NAS_REQUISITOS.md` | lo que se pidió armar en el NAS |
+   | `docs/NAS_INSTALAR.md` | paso a paso para instalar en el NAS y mudar la base |
 
 4. **Cada vez que terminemos algo importante**, reemplazá en el Proyecto los archivos de `docs/`
    que hayan cambiado (los actualizo yo en tu carpeta). Así el próximo chat arranca al día.
@@ -76,7 +77,11 @@ Respondé en español (Argentina).
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
 - **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 8** (usuarios y sesiones), backup diario y
   antes de cada migración.
-- **Tests**: 116 pasan (`python -m pytest`) en la rama `claude/login`.
+- **Tests**: 126 pasan (`python -m pytest`) con lo del NAS.
+- **Preparado para el NAS** (rama `claude/project-thread-pfy3gt`, sale de `claude/login`):
+  `Dockerfile`, `docker-compose.yml` (api + bot), `GET /salud` con healthcheck, backup diario
+  aunque la app no se reinicie, rutas y zona horaria desde el `.env` y el script de mudanza
+  `python -m app.nucleo.mudanza`. **Docker no se probó en la PC** (no tiene Docker): se prueba en el NAS.
 - **Git**: Químicos (`claude/project-thread-kcdnm3`) y Crías (`claude/project-thread-nx62se`) están
   combinadas en la rama `claude/login` junto con el login. **Falta el OK para mergear a main.**
 
@@ -88,23 +93,26 @@ Respondé en español (Argentina).
 Traer completada la sección **"Qué traer de vuelta"** de `NAS_REQUISITOS.md` (sistema,
 Docker, IP, usuario, carpeta, Tailscale, Cloudflare, UPS, backups).
 
-### B. Subir el código a GitHub (repo privado)
-- Para bajarlo en el NAS con `git clone` / `git pull`.
-- Revisar antes que `.gitignore` deje afuera `.env`, `datos/`, `*.db` y `.venv/`.
+### B. GitHub ✅
+Ya está en `Facu289/AgTech-SaaS` (confirmá en GitHub que sea **Private**). `.gitignore` revisado:
+deja afuera `.env` (y `.env.*`), `datos/`, `*.db` (y sus `-journal`/`-wal`/`-shm`) y `.venv/`.
+En la historia de Git no hay ningún `.env` ni base. En el NAS se baja con una deploy key
+(ver `NAS_INSTALAR.md`).
 
-### C. Docker
+### C. Docker ✅ (falta probarlo en el NAS)
 - `Dockerfile` (Python, dependencias, código).
 - `docker-compose.yml` con dos servicios: **api** (uvicorn) y **bot** (`bot/bot.py`, que apunta
   a la api por el nombre del servicio).
 - Carpeta `datos/` como volumen (`/srv/agroapp/datos`), zona horaria Argentina,
   `restart: unless-stopped`, `.env` copiado a mano.
-- Probarlo primero en la PC si se puede.
+- En la PC no hay Docker: se prueba en el NAS con `docker compose config` y `docker compose build`.
 
-### D. Mudar la base al NAS (con cuidado)
+### D. Mudar la base al NAS (con cuidado) — script listo, paso a paso en `NAS_INSTALAR.md`
 1. Apagar backend y bot en la PC.
 2. Backup manual.
 3. Copiar `datos/agroapp.db` al NAS.
 4. Verificar la copia (mismo hash y `PRAGMA integrity_check`).
+   (Los pasos 2 a 4 los hace `python -m app.nucleo.mudanza preparar` en la PC y `verificar` en el NAS).
 5. Arrancar en el NAS y probar web y bot.
 6. **No volver a prender el bot en la PC**: dos bots con el mismo token a la vez chocan.
 
@@ -136,6 +144,9 @@ Copia diaria de `datos/backups` a la nube (rclone u otro) y una prueba de restau
   - backend: `uvicorn app.main:app --reload`
   - bot: `python bot/bot.py`
 - **Web**: http://127.0.0.1:8000/web/
+- **En el NAS**: `docker compose up -d --build`, `docker compose ps`, `docker compose logs -f`.
+  Variables extra del `.env` solo para Docker: `AGROAPP_CARPETA_DATOS`, `AGROAPP_ZONA_HORARIA`,
+  `AGROAPP_PUERTO`, `AGROAPP_UID`, `AGROAPP_GID` (ver `ejemplo_env.txt`).
 - **Variables del `.env`**: `TELEGRAM_TOKEN`, `TELEGRAM_USUARIOS_AUTORIZADOS`,
   `GEMINI_API_KEY`, `GEMINI_MODEL` (por defecto `gemini-3.5-flash-lite`),
   `AGROAPP_BOT_TOKEN` (el bot entra a la API con esto) y `AGROAPP_COOKIE_SEGURA` (1 con HTTPS).

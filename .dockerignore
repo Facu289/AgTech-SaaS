@@ -1,0 +1,18 @@
+# Lo que NO se copia a la imagen de Docker (ver Dockerfile, "COPY . .").
+# Claves: el .env se le pasa al contenedor desde afuera (docker-compose.yml), nunca va adentro.
+.env
+# Datos: la base y los backups viven en el volumen datos/, no en la imagen.
+datos/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+# Cosas de la PC que no hacen falta para correr la app.
+.venv/
+.git/
+.pytest_cache/
+**/__pycache__/
+.vscode/
+docs/viejo/
+Tareas.md
+reorganizar.ps1

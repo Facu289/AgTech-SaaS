@@ -7,7 +7,9 @@ Cada área está en su carpeta (app/insumos, app/maquinaria, app/ganaderia) con:
   rutas.py     -> los endpoints de la API (lo que usa la web)
   telegram.py  -> los comandos del bot
 """
+import asyncio
 import sqlite3
+from contextlib import asynccontextmanager
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -34,7 +36,20 @@ load_dotenv()  # Variables del .env (ej: AGROAPP_BOT_TOKEN).
 # Al iniciar: primero un backup, después las tablas y migraciones (ver backup.preparar_base).
 backup.preparar_base()
 
-app = FastAPI(title="AgroApp")
+
+@asynccontextmanager
+async def al_prender_y_apagar(app):
+    """Corre al prender el backend (antes del yield) y al apagarlo (después).
+
+    En el NAS el backend queda prendido semanas: el backup "de cada día" no puede depender
+    de que se reinicie. Por eso dejamos una tarea de fondo que lo revisa cada hora.
+    """
+    tarea = asyncio.create_task(backup.backup_diario_continuo())
+    yield
+    tarea.cancel()
+
+
+app = FastAPI(title="AgroApp", lifespan=al_prender_y_apagar)
 app.include_router(insumos_rutas.router)
 app.include_router(maquinaria_rutas.router)
 app.include_router(ganaderia_rutas.router)
@@ -112,6 +127,20 @@ def error_integridad(request: Request, error):
 @app.get("/")
 def inicio():
     return RedirectResponse("/web/")
+
+
+@app.get("/salud")
+def salud():
+    """¿Anda la app? Docker la consulta cada tanto (healthcheck). No pide login ni muestra datos.
+
+    Además de responder, prueba leer la base: si la base no se puede abrir, contesta 503.
+    """
+    try:
+        with database.conectar() as conexion:
+            conexion.execute("SELECT 1").fetchone()
+    except sqlite3.Error:
+        return _error(503, "La base de datos no responde.")
+    return {"estado": "ok"}
 
 
 @app.get("/opciones")

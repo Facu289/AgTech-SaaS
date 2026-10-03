@@ -1,0 +1,63 @@
+# AgroApp en Docker: dos servicios (contenedores) que usan la MISMA imagen (ver Dockerfile).
+#   api -> el backend (web + API), en el puerto 8000
+#   bot -> el cartero de Telegram, que le habla a la api por su nombre: http://api:8000
+#
+# Comandos (desde la carpeta del proyecto, ej. /srv/agroapp):
+#   docker compose up -d --build     arma la imagen y prende todo en segundo plano
+#   docker compose ps                estado (la api tiene que decir "healthy")
+#   docker compose logs -f bot       ver lo que va pasando (Ctrl+C para dejar de mirar)
+#   docker compose down              apaga todo (los datos quedan en datos/)
+#
+# Las variables ${...} salen del archivo .env de esta carpeta (ver ejemplo_env.txt).
+# Lo que va después de ":-" es el valor si el .env no dice nada.
+
+name: agroapp
+
+# Lo que comparten los dos servicios (se "pega" abajo con <<: *comun).
+x-comun: &comun
+  build: .
+  image: agroapp:latest
+  env_file: .env
+  # Usuario y grupo del NAS dueño de la carpeta datos/ (en el NAS: "id agro").
+  user: "${AGROAPP_UID:-1000}:${AGROAPP_GID:-1000}"
+  restart: unless-stopped
+  # Que los logs no llenen el disco: hasta 3 archivos de 10 MB por servicio.
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  api:
+    <<: *comun
+    environment:
+      TZ: ${AGROAPP_ZONA_HORARIA:-America/Argentina/Buenos_Aires}
+      # Rutas DENTRO del contenedor. Afuera, en el NAS, es la carpeta del volumen de abajo.
+      AGROAPP_DB: /app/datos/agroapp.db
+      AGROAPP_BACKUPS: /app/datos/backups
+    volumes:
+      # carpeta del NAS : carpeta dentro del contenedor
+      - ${AGROAPP_CARPETA_DATOS:-./datos}:/app/datos
+    ports:
+      - "${AGROAPP_PUERTO:-8000}:8000"
+    # Docker pregunta cada 30 s a /salud si la app anda. Si falla 3 veces seguidas, la marca "unhealthy".
+    # (La imagen no trae curl: preguntamos con Python).
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/salud', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  bot:
+    <<: *comun
+    command: ["python", "bot/bot.py"]
+    environment:
+      TZ: ${AGROAPP_ZONA_HORARIA:-America/Argentina/Buenos_Aires}
+      # "api" es el nombre del servicio de arriba: Docker lo convierte en su dirección.
+      BACKEND_URL: http://api:8000
+    # El bot no arranca hasta que la api esté "healthy" (si no, sus primeros mensajes fallarían).
+    depends_on:
+      api:
+        condition: service_healthy

@@ -60,8 +60,11 @@
 
 ## Próximo (producción en el NAS — detalle en INICIO_PROYECTO.md)
 - [ ] NAS listo (otro chat, según NAS_REQUISITOS.md)
-- [ ] Código en GitHub (repo privado)
-- [ ] Docker + docker-compose (api + bot) y mudar la base al NAS
+- [x] Código en GitHub (`Facu289/AgTech-SaaS`; confirmar que sea privado)
+- [x] Docker + docker-compose (api + bot, volumen datos/, TZ Argentina, healthcheck con /salud)
+- [x] Rutas de base/backups y zona horaria desde el .env; backup diario aunque la app no se reinicie
+- [x] Script de mudanza: backup, copia, SHA-256, integrity_check (`python -m app.nucleo.mudanza`)
+- [ ] Probar Docker en el NAS y mudar la base (guía: `docs/NAS_INSTALAR.md`)
 - [x] Login en la web: usuario y contraseña (hash scrypt), sesión con cookie (HttpOnly, SameSite=Lax,
       Secure con HTTPS), página de login y botón Salir, toda la web y la API protegidas, el bot entra
       con su token (AGROAPP_BOT_TOKEN), usuarios por consola (`python -m app.usuarios.crear_usuario`), migración 8

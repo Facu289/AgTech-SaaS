@@ -1,10 +1,14 @@
-"""Backups de la base: automático al iniciar (uno por día) y antes de migrar. También manual."""
+"""Backups de la base: uno por día (al iniciar y mientras está prendida) y antes de migrar. También manual."""
+import asyncio
+import os
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 
 from app.nucleo import database
 
-CARPETA_BACKUPS = database.DB_PATH.parent / "backups"
+# Por defecto, datos/backups (al lado de la base). AGROAPP_BACKUPS permite elegir otra carpeta.
+CARPETA_BACKUPS = Path(os.getenv("AGROAPP_BACKUPS", database.DB_PATH.parent / "backups"))
 CANTIDAD_A_GUARDAR = 30  # Se guardan los 30 backups más nuevos.
 
 
@@ -16,7 +20,7 @@ def hacer_backup(solo_si_no_hay_de_hoy=False):
     if not database.DB_PATH.exists():
         return None
 
-    CARPETA_BACKUPS.mkdir(exist_ok=True)
+    CARPETA_BACKUPS.mkdir(parents=True, exist_ok=True)
     ahora = datetime.now()
 
     if solo_si_no_hay_de_hoy:
@@ -53,6 +57,19 @@ def preparar_base():
     else:
         hacer_backup(solo_si_no_hay_de_hoy=True)
     database.crear_tablas()
+
+
+async def backup_diario_continuo(cada_segundos=3600):
+    """Mientras el backend está prendido, cada hora se fija si ya hay backup de hoy (si no, lo hace).
+
+    La copia corre en otro hilo (to_thread) para no frenar a la web ni al bot mientras tanto.
+    """
+    while True:
+        await asyncio.sleep(cada_segundos)
+        try:
+            await asyncio.to_thread(hacer_backup, solo_si_no_hay_de_hoy=True)
+        except Exception as error:  # Un backup fallido no tiene que tirar abajo la app.
+            print(f"⚠️ No se pudo hacer el backup diario: {error}")
 
 
 def borrar_backups_viejos():

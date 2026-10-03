@@ -22,6 +22,7 @@ Otros comandos:
 |---|---|
 | Tests | `python -m pytest` |
 | Backup manual | `python -m app.nucleo.backup` |
+| En el NAS (Docker) | `docker compose up -d --build` (guía: `docs/NAS_INSTALAR.md`) |
 | Crear usuario de la web (o cambiar contraseña) | `python -m app.usuarios.crear_usuario` |
 | Instalar dependencias | `pip install -r requirements.txt` |
 
@@ -36,6 +37,7 @@ agroapp/
 │   ├── nucleo/             lo que usa todo el sistema
 │   │   ├── database.py       conexión y migraciones
 │   │   ├── backup.py         copias de seguridad
+│   │   ├── mudanza.py        mudar la base a otra máquina (copia + hash + revisión)
 │   │   ├── opciones.py       listas de valores (categorías, tipos, unidades...)
 │   │   ├── tipos.py          tipos de datos para validar (número "2,5", fecha vacía...)
 │   │   └── utilidades.py     texto, números y fechas en formato argentino
@@ -53,6 +55,7 @@ agroapp/
 ├── datos/                ← agroapp.db y backups/ (NO van a Git)
 ├── docs/                 ← PROJECT_CONTEXT.md (contexto) y ROADMAP.md
 ├── .env                  ← claves (NO va a Git). Ver ejemplo_env.txt
+├── Dockerfile · docker-compose.yml · .dockerignore   ← para correr en el NAS
 └── requirements.txt
 ```
 

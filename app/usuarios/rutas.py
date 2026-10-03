@@ -27,7 +27,8 @@ COOKIE = "agroapp_sesion"
 
 # Lo único que se puede pedir sin haber entrado. Rutas EXACTAS (sin comodines):
 # así nadie puede colarse con trucos como "/web/css/../index.html".
-RUTAS_LIBRES = {"/login", "/logout", "/web/login.html", "/web/js/login.js", "/web/css/estilos.css"}
+# /salud la usa Docker para saber si la app anda (no muestra datos).
+RUTAS_LIBRES = {"/login", "/logout", "/salud", "/web/login.html", "/web/js/login.js", "/web/css/estilos.css"}
 
 # Protección contra "probar contraseñas": después de 5 fallos seguidos para un mismo
 # usuario, se bloquea ese usuario por 15 minutos. (Vive en memoria: se reinicia con el backend).

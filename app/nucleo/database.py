@@ -9,10 +9,16 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Leemos el .env ACÁ (y no solo en main.py) porque DB_PATH se calcula al importar este archivo.
+# load_dotenv no pisa variables que ya existen: los tests y Docker ponen las suyas y ganan.
+load_dotenv()
+
 # Carpeta raíz del proyecto (agroapp/). Este archivo está en agroapp/app/nucleo/.
 CARPETA_PROYECTO = Path(__file__).resolve().parents[2]
 
-# La base vive en agroapp/datos/. (Los tests usan otra con la variable AGROAPP_DB).
+# La base vive en agroapp/datos/, salvo que AGROAPP_DB diga otra ruta (los tests y Docker la usan).
 DB_PATH = Path(os.getenv("AGROAPP_DB", CARPETA_PROYECTO / "datos" / "agroapp.db"))
 
 

@@ -5,3 +5,9 @@ __pycache__/
 Tareas.md
 *.db
 datos/
+# Archivos que SQLite crea al lado de la base mientras la usa
+*.db-journal
+*.db-wal
+*.db-shm
+# Por si alguna vez se crea otro .env (ej: .env.nas)
+.env.*

@@ -1,8 +1,10 @@
-fastapi
-uvicorn
-requests
-python-dotenv
-openpyxl
+# Versiones fijas (==): la PC y el NAS (Docker) instalan exactamente lo mismo.
+# Para actualizar: cambiar el numero, probar con los tests y recien ahi commitear.
+fastapi==0.141.1
+uvicorn==0.54.0
+requests==2.34.2
+python-dotenv==1.2.3
+openpyxl==3.1.5
 # Para correr los tests (python -m pytest):
-pytest
-httpx
+pytest==9.1.1
+httpx==0.28.1

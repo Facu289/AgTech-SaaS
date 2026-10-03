@@ -27,6 +27,8 @@ MISMA base: lo que se carga en una se ve en la otra.
 - Web: http://127.0.0.1:8000/web/ (Inicio) · Documentación API: http://127.0.0.1:8000/docs
 - Tests: `python -m pytest` (usan una base temporal, nunca tocan datos/agroapp.db)
 - Backup manual: `python -m app.nucleo.backup`
+- Mudar la base a otra máquina: `python -m app.nucleo.mudanza preparar` / `verificar <archivo>`
+- NAS (Docker): `docker compose up -d --build` · guía completa en `docs/NAS_INSTALAR.md`
 - Crear usuario de la web (o cambiarle la contraseña): `python -m app.usuarios.crear_usuario`
 
 ## Tecnologías
@@ -38,6 +40,8 @@ MISMA base: lo que se carga en una se ve en la otra.
   (funciona sin internet); menú izquierdo plegable. React más adelante.
 - openpyxl para exportar a Excel. Gemini (Google) para entender mensajes en lenguaje natural.
 - pytest + httpx para tests. `.env` para secretos. Git para versionar.
+- Docker + Docker Compose para el NAS: una imagen (`Dockerfile`, Python 3.14-slim) y dos servicios
+  (`docker-compose.yml`: **api** y **bot**). Versiones de librerías fijas (`==`) en requirements.txt.
 
 ## Estructura
 El árbol completo y "¿dónde toco para...?" están en el **README.md** de la raíz. Resumen:
@@ -72,6 +76,15 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
 - Los `telegram.py` reutilizan las reglas de su `rutas.py` (ej: nombres repetidos, stock bajo).
 - La web pide las listas de opciones a `GET /opciones` (no se repiten en JavaScript).
 - La web se refresca sola al volver a la pestaña y cada 60 s (así se ve lo cargado por Telegram).
+- **Rutas y zona horaria desde variables**: `AGROAPP_DB` (base) y `AGROAPP_BACKUPS` (carpeta de
+  backups), opcionales: en la PC no se ponen. `database.py` lee el `.env` apenas se importa (antes
+  `DB_PATH` se calculaba sin haberlo leído). En Docker las pone `docker-compose.yml`, y el `.env` del
+  NAS solo agrega `AGROAPP_CARPETA_DATOS`, `AGROAPP_ZONA_HORARIA`, `AGROAPP_PUERTO`, `AGROAPP_UID/GID`.
+- **Backup diario con la app prendida**: además del de arranque, una tarea de fondo (lifespan en
+  `main.py` → `backup.backup_diario_continuo`) revisa cada hora si ya hay backup de hoy. En el NAS
+  el backend queda prendido semanas y si no, no habría backups nuevos.
+- `GET /salud`: libre de login (está en `RUTAS_LIBRES`), prueba la base y responde `{"estado": "ok"}`
+  o 503. La usa el healthcheck de Docker; el bot arranca recién cuando la api está "healthy".
 - Si la base no está en `datos/` pero hay una vieja en la raíz, la app NO arranca (evita
   crear una base vacía por error) y pide correr `reorganizar.ps1`.
 
@@ -160,6 +173,13 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
   Hash con scrypt de la librería estándar (sin dependencias nuevas). Cookie HttpOnly, SameSite=Lax,
   Secure con HTTPS (o `AGROAPP_COOKIE_SEGURA=1` detrás de un proxy). 5 intentos fallidos → 15 min
   de bloqueo para ese usuario. Usuarios solo por consola (no hay "registrarse" en la web).
+- NAS con Docker Compose (no instalar Python en el NAS). Una sola imagen para api y bot; la base y
+  los backups en un volumen (`/srv/agroapp/datos` → `/app/datos`), nunca dentro de la imagen.
+  Un solo proceso de uvicorn (SQLite y lo pendiente de "sí" viven en memoria). Contenedores con el
+  usuario del NAS (uid/gid), no root. Zona horaria por `TZ` (la imagen trae tzdata).
+- Mudanza de la base: copia con la función backup() de SQLite + SHA-256 (formato de `sha256sum`) +
+  `integrity_check` y `foreign_key_check`, abriendo la copia solo para leer. Se niega si el backend
+  de la PC responde en /salud.
 
 ## Lecciones aprendidas (errores que ya nos pasaron)
 - No abrir `agroapp.db` en VS Code: se corrompe.
@@ -183,7 +203,11 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
   (no va al login, porque es un link y no un fetch).
 - FUTURA: detrás de Cloudflare / HTTPS, uvicorn necesita `--proxy-headers` (o AGROAPP_COOKIE_SEGURA=1)
   para que la cookie salga con Secure.
-- FUTURA: backups solo en la misma PC.
+- FUTURA: backups solo en la misma máquina (en el NAS, falta la copia a la nube).
+- MENOR: el bot no tiene healthcheck propio (no tiene HTTP): si se cuelga sin cerrarse, Docker no se
+  entera. Se ve con `docker compose logs bot`.
+- MENOR: Dockerfile y docker-compose.yml no se pudieron probar en la PC (no tiene Docker): se
+  prueban en el NAS con `docker compose config` y `build` (ver NAS_INSTALAR.md).
 - MENOR: el formulario de máquina y el de vencimiento están repetidos en dos HTML cada uno.
 - Estructura en carpetas desde el 30/09/2026 (antes todo suelto en la raíz).
 - MENOR: la búsqueda de insumos/máquinas/animales filtra en Python (ok para cientos).
@@ -203,5 +227,7 @@ También: repuestos asignables a varias máquinas (migración 5) y N° de serie 
 monitor en la máquina para licencias de piloto y suscripciones (migración 6), y especies que crea
 el usuario + grupos de animales + caravana repetible (migración 7). Se usa con datos reales.
 Login web hecho (migración 8) en la rama `claude/login`, junto con Químicos y Crías: falta mergear a main.
-**Siguiente**: NAS (en otro chat) → GitHub → Docker → mudar la base → WhatsApp.
+Preparado para el NAS (rama `claude/project-thread-pfy3gt`): Docker, /salud, backup continuo, rutas por .env y script
+de mudanza. Falta probar Docker en el NAS.
+**Siguiente**: NAS listo (otro chat) → instalar y mudar con `docs/NAS_INSTALAR.md` → WhatsApp.
 El detalle está en `docs/INICIO_PROYECTO.md`.
