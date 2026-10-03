@@ -151,6 +151,22 @@ def test_opciones(cliente):
     opciones = cliente.get("/opciones").json()
     assert "herbicida" in opciones["subcategorias"]["agroquimico"]
     assert "filtros" in opciones["subcategorias"]["repuesto"]
+    assert opciones["hojas_insumos"]["quimicos"] == ["agroquimico"]
+    assert opciones["hojas_insumos"]["repuestos"] == ["repuesto"]
+    assert "fertilizante" in opciones["hojas_insumos"]["insumos"]
+
+
+def test_cada_insumo_dice_su_hoja(cliente):
+    """La web separa Insumos, Químicos y Repuestos con el campo "hoja" (sale de la categoría)."""
+    crear(cliente)  # Urea, fertilizante.
+    crear(cliente, nombre="Glifosato", categoria="agroquimico", unidad="litros")
+    crear(cliente, nombre="Filtro", categoria="repuesto", unidad="unidades")
+    hojas = {i["nombre"]: i["hoja"] for i in cliente.get("/insumos").json()}
+    assert hojas == {"Urea": "insumos", "Glifosato": "quimicos", "Filtro": "repuestos"}
+    # Si se le cambia la categoría, cambia de hoja (no hay nada más que tocar en la base).
+    glifo = next(i for i in cliente.get("/insumos").json() if i["nombre"] == "Glifosato")
+    editado = cliente.put(f"/insumos/{glifo['id']}", json={"nombre": "Glifosato", "categoria": "otro", "unidad": "litros"})
+    assert editado.json()["hoja"] == "insumos"
 
 
 # ---------- Telegram ----------
@@ -185,6 +201,20 @@ def test_stock_con_filtro(bot):
     respuesta = bot("/stock herbicidas")
     assert "glifosato" in respuesta and "cipermetrina" not in respuesta and "urea" not in respuesta
     assert "urea" in bot("/stock ure")
+
+
+def test_quimicos(bot):
+    assert "No hay químicos" in bot("/quimicos")
+    bot("/nuevo glifosato herbicida litros")
+    bot("/nuevo cipermetrina insecticida litros")
+    bot("/nuevo urea fertilizante kg")
+    bot("/nuevo filtro aceite filtros unidades")
+    respuesta = bot("/quimicos")
+    assert "glifosato" in respuesta and "cipermetrina" in respuesta
+    assert "urea" not in respuesta and "filtro" not in respuesta
+    assert "cipermetrina" not in bot("/quimicos herbicida")
+    assert "No encontré químicos" in bot("/quimicos urea")
+    assert "glifosato" in bot("/químicos")  # Con tilde también.
 
 
 def test_repuestos(bot, cliente):

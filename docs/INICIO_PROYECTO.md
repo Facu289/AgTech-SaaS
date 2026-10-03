@@ -1,7 +1,7 @@
 # AgroApp — Cómo seguir en un Proyecto nuevo
 
 > Resumen para retomar AgroApp desde cero en un **Proyecto** de Claude, sin depender de chats
-> anteriores. Estado al **01/10/2026**.
+> anteriores. Estado al **02/10/2026**.
 
 ## 1. Armar el Proyecto
 
@@ -56,7 +56,9 @@ Respondé en español (Argentina).
 
 **Funciona y se usa con datos reales** (en la PC con Windows):
 
-- **Insumos y repuestos**: stock con historial, subcategorías, stock mínimo, archivar.
+- **Insumos, químicos y repuestos**: tres páginas (y tres hojas en el Excel completo), stock
+  con historial, subcategorías, stock mínimo, archivar. Químicos = agroquímicos (se define en
+  `CATEGORIAS_QUIMICOS` de `app/nucleo/opciones.py`); en Telegram, `/quimicos`.
   Repuestos asignables a **varias máquinas** (tabla `insumo_maquinas`).
   **N° de serie del monitor** en la máquina: lo muestran sus licencias y suscripciones
   (nuevo tipo de vencimiento "Suscripción / app", también para apps sin máquina).
@@ -71,8 +73,8 @@ Respondé en español (Argentina).
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
 - **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 7**, backup diario y
   antes de cada migración.
-- **Tests**: 91 pasan (`python -m pytest`).
-- **Git**: último commit "Especies libres, grupos de animales y caravana repetible (migración 7)".
+- **Tests**: 93 pasan (`python -m pytest`).
+- **Git**: último commit "Insumos, Químicos y Repuestos en páginas separadas".
 
 **En curso, en otro chat**: armado del NAS según `docs/NAS_REQUISITOS.md`.
 

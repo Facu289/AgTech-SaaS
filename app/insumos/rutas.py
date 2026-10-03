@@ -77,6 +77,7 @@ class Insumo(BaseModel):
     cantidad: float
     stock_minimo: float
     maquinas: list[MaquinaCorta]
+    hoja: str  # Página donde se ve: insumos, quimicos o repuestos (sale de la categoría).
     archivado: bool
     tiene_movimientos: bool
 

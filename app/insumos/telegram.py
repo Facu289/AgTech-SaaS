@@ -1,4 +1,4 @@
-"""Comandos de Telegram de stock: /stock, /repuestos, /nuevo, /entrada, /salida."""
+"""Comandos de Telegram de stock: /stock, /quimicos, /repuestos, /nuevo, /entrada, /salida."""
 from app.insumos import db as insumos_db
 from app.insumos.rutas import insumo_con_mismo_nombre, mensaje_duplicado, stock_bajo
 from app.nucleo.opciones import CATEGORIAS, SUBCATEGORIAS, UNIDADES, categoria_de_subcategoria, subcategorias_de
@@ -64,6 +64,15 @@ def _texto_lista(insumos, titulo: str, filtro: str) -> str:
 def comando_stock(argumento: str) -> str:
     """/stock [filtro]  ->  todo el stock, o filtrado: /stock herbicida | /stock semillas | /stock urea"""
     return _texto_lista(insumos_db.listar_insumos(), "📋 Stock de insumos", argumento)
+
+
+def comando_quimicos(argumento: str) -> str:
+    """/quimicos [filtro]  ->  solo químicos: /quimicos | /quimicos herbicida | /quimicos glifo"""
+    quimicos = [i for i in insumos_db.listar_insumos() if i["hoja"] == "quimicos"]
+    if not quimicos:
+        return "No hay químicos cargados todavía."
+    respuesta = _texto_lista(quimicos, "🧪 Químicos", argumento)
+    return respuesta.replace("No encontré insumos", "No encontré químicos")
 
 
 def comando_repuestos(argumento: str) -> str:

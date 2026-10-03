@@ -16,6 +16,7 @@
 - [x] Backup automático diario de la base (+ manual con `python backup.py`, + antes de migrar)
 - [x] Subcategorías (herbicida, insecticida, filtros, correas...) y stock mínimo con alertas
 - [x] Repuestos (página propia, /repuestos) vinculables a una o varias máquinas
+- [x] Químicos en página propia (/quimicos) y tres hojas en el Excel completo (Insumos, Químicos, Repuestos)
 - [x] Eliminar insumo (si no tiene movimientos) o archivarlo (si tiene historial)
 - [ ] Ver historial de movimientos desde Telegram (/historial)  ← mini desafío (en la web ya está)
 

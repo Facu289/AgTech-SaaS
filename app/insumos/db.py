@@ -1,5 +1,6 @@
 """SQL de insumos (y repuestos) y de movimientos de stock."""
 from app.nucleo.database import Archivado, NoEncontrado, TieneHistorial, conectar, filas_a_dicts
+from app.nucleo.opciones import hoja_de
 
 
 class InsumoNoEncontrado(NoEncontrado):
@@ -26,7 +27,8 @@ SELECT_INSUMOS = """
 
 
 def _agregar_maquinas(conexion, insumos: list) -> list:
-    """A cada insumo le agrega "maquinas": [{"id": 1, "nombre": "Tractor JD"}, ...].
+    """A cada insumo le agrega "maquinas": [{"id": 1, "nombre": "Tractor JD"}, ...]
+    y "hoja": en qué página se ve ('insumos', 'quimicos' o 'repuestos').
 
     Se hace con UNA consulta para todos (no una por insumo) y se reparte en Python.
     """
@@ -40,6 +42,7 @@ def _agregar_maquinas(conexion, insumos: list) -> list:
             por_insumo[insumo_id].append({"id": maquina_id, "nombre": nombre})
     for insumo in insumos:
         insumo["maquinas"] = por_insumo[insumo["id"]]
+        insumo["hoja"] = hoja_de(insumo["categoria"])
     return insumos
 
 

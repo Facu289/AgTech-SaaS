@@ -1,10 +1,13 @@
 // =========================================================
-// insumos.js — páginas "Insumos" (insumos.html) y "Repuestos" (repuestos.html).
+// insumos.js — páginas "Insumos" (insumos.html), "Químicos" (quimicos.html)
+// y "Repuestos" (repuestos.html).
 // Es el mismo código: data-pagina del <body> dice cuál es.
 // =========================================================
 
-const ES_REPUESTOS = document.body.dataset.pagina === "repuestos";
-const NOMBRE = ES_REPUESTOS ? "repuesto" : "insumo";
+const PAGINA = document.body.dataset.pagina; // "insumos", "quimicos" o "repuestos"
+const ES_REPUESTOS = PAGINA === "repuestos";
+const NOMBRE = { insumos: "insumo", quimicos: "químico", repuestos: "repuesto" }[PAGINA];
+const TITULO = NOMBRE.charAt(0).toUpperCase() + NOMBRE.slice(1); // "Químico"
 
 const estado = document.getElementById("estado");
 const cuerpoTabla = document.getElementById("cuerpo-tabla");
@@ -21,9 +24,9 @@ let todos = []; // Todos los insumos de esta página (sin filtrar).
 let editandoId = null;
 let ultimasVisibles = []; // Lo que se ve en la tabla (para exportar a Excel).
 
-// ¿Este insumo va en esta página? (Repuestos solo repuestos; Insumos todo lo demás)
+// ¿Este insumo va en esta página? La API ya dice su "hoja" (sale de la categoría).
 function correspondeAPagina(insumo) {
-  return ES_REPUESTOS ? insumo.categoria === "repuesto" : insumo.categoria !== "repuesto";
+  return insumo.hoja === PAGINA;
 }
 
 function stockBajo(insumo) {
@@ -32,10 +35,11 @@ function stockBajo(insumo) {
 
 // ---------- Desplegables ----------
 
+// Solo las categorías de esta página (Químicos: agroquímicos; Insumos: el resto...).
+// Cuáles van en cada página se define en app/nucleo/opciones.py (CATEGORIAS_QUIMICOS).
 function categoriasDeLaPagina() {
-  const categorias = { ...opciones.categorias };
-  if (!ES_REPUESTOS) delete categorias.repuesto;
-  return categorias;
+  const deEstaPagina = opciones.hojas_insumos[PAGINA];
+  return Object.fromEntries(Object.entries(opciones.categorias).filter(([valor]) => deEstaPagina.includes(valor)));
 }
 
 // Los tipos (subcategorías) dependen de la categoría elegida.
@@ -70,7 +74,9 @@ function prepararDesplegables() {
   // En el formulario de edición se puede cambiar a cualquier categoría (incluso repuesto).
   llenarSelect(formEditar.elements.categoria, opciones.categorias, "Elegí…");
   const selectCategoriaNuevo = formNuevo.querySelector("[data-categorias]");
-  if (selectCategoriaNuevo) llenarSelect(selectCategoriaNuevo, categoriasDeLaPagina(), "Elegí…");
+  // Si la página tiene una sola categoría (Químicos = Agroquímico), ya queda elegida.
+  const unaSola = Object.keys(categoriasDeLaPagina()).length === 1;
+  if (selectCategoriaNuevo) llenarSelect(selectCategoriaNuevo, categoriasDeLaPagina(), unaSola ? "" : "Elegí…");
 
   const filtroCategoria = formFiltros.querySelector("[data-categorias-filtro]");
   if (filtroCategoria) llenarSelect(filtroCategoria, categoriasDeLaPagina(), "Todas las categorías");
@@ -269,7 +275,7 @@ formNuevo.addEventListener("submit", async (evento) => {
   evento.preventDefault();
   const creado = await enviarFormulario(formNuevo, (datos) => api("POST", "/insumos", datos));
   if (!creado) return;
-  avisar(`✅ ${ES_REPUESTOS ? "Repuesto" : "Insumo"} creado: ${creado.nombre}. Cargale stock con "Registrar movimiento".`);
+  avisar(`✅ ${TITULO} creado: ${creado.nombre}. Cargale stock con "Registrar movimiento".`);
   formNuevo.reset();
   actualizarTipos(formNuevo);
   formNuevo.elements.nombre.focus();
@@ -333,14 +339,14 @@ formFiltros.addEventListener("reset", () => {
 function exportar() {
   const columnas = ES_REPUESTOS
     ? ["Repuesto", "Tipo", "Máquinas", "Cantidad", "Unidad", "Stock mínimo", "Archivado"]
-    : ["Insumo", "Categoría", "Tipo", "Cantidad", "Unidad", "Stock mínimo", "Archivado"];
+    : [TITULO, "Categoría", "Tipo", "Cantidad", "Unidad", "Stock mínimo", "Archivado"];
   const filas = ultimasVisibles.map((i) => {
     const tipo = subcategoriasDe(i.categoria)[i.subcategoria] || "";
     const nombresMaquinas = i.maquinas.map((m) => m.nombre).join(", ") || "General";
     const inicio = ES_REPUESTOS ? [i.nombre, tipo, nombresMaquinas] : [i.nombre, opciones.categorias[i.categoria], tipo];
     return [...inicio, i.cantidad, i.unidad, i.stock_minimo, i.archivado ? "Sí" : "No"];
   });
-  exportarExcel(ES_REPUESTOS ? "repuestos" : "insumos", ES_REPUESTOS ? "Repuestos" : "Insumos", columnas, filas);
+  exportarExcel(PAGINA, opciones.hojas_titulos[PAGINA], columnas, filas);
 }
 document.getElementById("boton-actualizar").before(botonExportar(exportar));
 

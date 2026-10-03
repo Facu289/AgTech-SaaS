@@ -37,7 +37,7 @@ COMANDOS_ESCRITURA = {
     "/service", "/arreglo", "/parto", "/tacto", "/servicio", "/aborto",
 }
 COMANDOS_LECTURA = {
-    "/stock", "/repuestos", "/notas", "/maquinas", "/vencimientos", "/services",
+    "/stock", "/quimicos", "/repuestos", "/notas", "/maquinas", "/vencimientos", "/services",
     "/animales", "/animal", "/alertas", "/ayuda",
 }
 MAXIMO_COMANDOS = 5

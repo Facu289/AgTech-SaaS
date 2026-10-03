@@ -71,6 +71,9 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
 ## Base de datos (SQLite)
 - `insumos`: id, nombre (UNIQUE NOCASE), categoria, **subcategoria**, unidad, cantidad (>= 0),
   **stock_minimo**, **archivado**, creado_en (la columna vieja `maquina_id` quedó sin uso: siempre NULL)
+  La web los muestra en tres páginas según la categoría (no hay columna nueva): **Repuestos**
+  (repuesto), **Químicos** (las de `CATEGORIAS_QUIMICOS` en `opciones.py`, hoy agroquímico) e
+  **Insumos** (el resto). La API devuelve `hoja` ("insumos", "quimicos" o "repuestos").
 - `insumo_maquinas`: insumo_id, maquina_id (PK de ambos). Tabla intermedia "muchos a muchos":
   un repuesto sirve para varias máquinas y una máquina tiene varios repuestos (migración 5).
   La API recibe `maquinas: [ids]` (todavía acepta `maquina_id`) y devuelve `maquinas: [{id, nombre}]`.
@@ -109,7 +112,7 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
   Antes de migrar se hace un backup automático.
 
 ## Comandos del bot
-Stock: `/stock [filtro]` · `/repuestos [filtro]` · `/nuevo <nombre> <categoría o tipo> <unidad>` ·
+Stock: `/stock [filtro]` · `/quimicos [filtro]` · `/repuestos [filtro]` · `/nuevo <nombre> <categoría o tipo> <unidad>` ·
 `/entrada` y `/salida <cant> <insumo> - motivo`
 Maquinaria: `/maquinas [filtro]` · `/horas <máquina> <horas>` · `/trabajo <máquina> <ha> <tipo> - lote` ·
 `/service <máquina> - desc` (si nombra un plan, lo reinicia; "- todo" = todos) · `/arreglo` ·
@@ -129,6 +132,8 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - Stock = saldo guardado + historial de movimientos (transacción).
 - Frontend en HTML/JS puro antes que React. Telegram = campo; Web = oficina.
 - La creación de insumos es siempre explícita (`/nuevo` o la web), para evitar duplicados.
+- Insumos / Químicos / Repuestos: se separan por categoría (sin migración). Cambiar qué es
+  "químico" = editar `CATEGORIAS_QUIMICOS` en `opciones.py`.
 - Subcategorías como columna aparte (no como categorías nuevas); repuesto → máquina opcional.
 - Ganadería: especies y categorías en la BASE (las crea el usuario), no en `opciones.py`.
   Caravana repetible con confirmación; en Telegram, si se repite, se pone la especie antes
