@@ -27,6 +27,7 @@ MISMA base: lo que se carga en una se ve en la otra.
 - Web: http://127.0.0.1:8000/web/ (Inicio) · Documentación API: http://127.0.0.1:8000/docs
 - Tests: `python -m pytest` (usan una base temporal, nunca tocan datos/agroapp.db)
 - Backup manual: `python -m app.nucleo.backup`
+- Crear usuario de la web (o cambiarle la contraseña): `python -m app.usuarios.crear_usuario`
 
 ## Tecnologías
 - Python + FastAPI + Pydantic (backend y API)
@@ -45,6 +46,7 @@ agroapp/
 ├── app/         ← backend. main.py + alertas.py + exportar.py
 │   ├── nucleo/    database (conexión, migraciones), backup, opciones, tipos, utilidades
 │   ├── insumos/ maquinaria/ ganaderia/   cada una: db.py (SQL) · rutas.py (API) · telegram.py (bot)
+│   ├── usuarios/  login: db.py (hash y sesiones) · rutas.py (/login, /logout, /yo y el portero) · crear_usuario.py
 │   └── telegram/  comandos.py (reparte mensajes) · lenguaje_natural.py (Gemini) · notas.py
 ├── bot/bot.py   ← cartero Telegram ↔ backend
 ├── web/         ← páginas .html · css/estilos.css · js/ (comun.js + uno por página)
@@ -60,6 +62,11 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
                                    ambos ─► <área>/db.py ─► app/nucleo/database.py ─► datos/agroapp.db
 ```
 - `bot/bot.py` no tiene lógica de negocio: reenvía el texto (y quién escribe) a `POST /mensaje`.
+- **Login**: un middleware en `main.py` (el "portero", `usuarios/rutas.py: revisar_pedido`) revisa
+  CADA pedido. Sin cookie de sesión válida: las páginas van a `/web/login.html` (303) y la API
+  responde 401 (la web, en `comun.js`, manda al login). Libres solo: `/login`, `/logout`,
+  `login.html`, `login.js` y `estilos.css` (rutas EXACTAS, para que "../" no cuele nada).
+  El bot manda `Authorization: Bearer <AGROAPP_BOT_TOKEN>` y con eso solo puede usar `POST /mensaje`.
 - Los `db.py` no saben nada de HTTP: lanzan excepciones (`NoEncontrado`, `TieneHistorial`,
   `Archivado`, `StockInsuficiente`, `EventoInvalido`) y `app/main.py` las traduce a HTTP en UN lugar.
 - Los `telegram.py` reutilizan las reglas de su `rutas.py` (ej: nombres repetidos, stock bajo).
@@ -71,6 +78,9 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
 ## Base de datos (SQLite)
 - `insumos`: id, nombre (UNIQUE NOCASE), categoria, **subcategoria**, unidad, cantidad (>= 0),
   **stock_minimo**, **archivado**, creado_en (la columna vieja `maquina_id` quedó sin uso: siempre NULL)
+  La web los muestra en tres páginas según la categoría (no hay columna nueva): **Repuestos**
+  (repuesto), **Químicos** (las de `CATEGORIAS_QUIMICOS` en `opciones.py`, hoy agroquímico) e
+  **Insumos** (el resto). La API devuelve `hoja` ("insumos", "quimicos" o "repuestos").
 - `insumo_maquinas`: insumo_id, maquina_id (PK de ambos). Tabla intermedia "muchos a muchos":
   un repuesto sirve para varias máquinas y una máquina tiene varios repuestos (migración 5).
   La API recibe `maquinas: [ids]` (todavía acepta `maquina_id`) y devuelve `maquinas: [{id, nombre}]`.
@@ -105,11 +115,14 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
 - Migración 7 reconstruyó `animales` (para sacar el UNIQUE de la caravana). Durante cada migración
   las foreign keys se apagan y al final se revisan con `PRAGMA foreign_key_check`.
 - Se elimina solo lo que no tiene historial; lo demás se **archiva** (o se da de baja).
+- `usuarios` (migración 8): nombre (UNIQUE NOCASE), hash_contrasena ("scrypt$N$r$p$sal$huella"),
+  activo. `sesiones`: hash_token (sha256 del token de la cookie, nunca el token), usuario_id,
+  expira_en (30 días). Cambiar la contraseña cierra las sesiones de ese usuario.
 - **Migraciones**: lista `MIGRACIONES` en database.py. Nunca editar una ya aplicada: agregar otra.
   Antes de migrar se hace un backup automático.
 
 ## Comandos del bot
-Stock: `/stock [filtro]` · `/repuestos [filtro]` · `/nuevo <nombre> <categoría o tipo> <unidad>` ·
+Stock: `/stock [filtro]` · `/quimicos [filtro]` · `/repuestos [filtro]` · `/nuevo <nombre> <categoría o tipo> <unidad>` ·
 `/entrada` y `/salida <cant> <insumo> - motivo`
 Maquinaria: `/maquinas [filtro]` · `/horas <máquina> <horas>` · `/trabajo <máquina> <ha> <tipo> - lote` ·
 `/service <máquina> - desc` (si nombra un plan, lo reinicia; "- todo" = todos) · `/arreglo` ·
@@ -129,6 +142,8 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - Stock = saldo guardado + historial de movimientos (transacción).
 - Frontend en HTML/JS puro antes que React. Telegram = campo; Web = oficina.
 - La creación de insumos es siempre explícita (`/nuevo` o la web), para evitar duplicados.
+- Insumos / Químicos / Repuestos: se separan por categoría (sin migración). Cambiar qué es
+  "químico" = editar `CATEGORIAS_QUIMICOS` en `opciones.py`.
 - Subcategorías como columna aparte (no como categorías nuevas); repuesto → máquina opcional.
 - Ganadería: especies y categorías en la BASE (las crea el usuario), no en `opciones.py`.
   Caravana repetible con confirmación; en Telegram, si se repite, se pone la especie antes
@@ -141,6 +156,10 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - Gemini solo traduce a comandos existentes (mismas validaciones) + confirmación antes de escribir.
   El modelo se configura en .env (GEMINI_MODEL) porque Google los renueva seguido.
 - Service programado: varios planes por máquina, medidos con horas de motor o de trilla.
+- Login: sesión en la base + cookie (no JWT): se puede cerrar desde el servidor y es simple.
+  Hash con scrypt de la librería estándar (sin dependencias nuevas). Cookie HttpOnly, SameSite=Lax,
+  Secure con HTTPS (o `AGROAPP_COOKIE_SEGURA=1` detrás de un proxy). 5 intentos fallidos → 15 min
+  de bloqueo para ese usuario. Usuarios solo por consola (no hay "registrarse" en la web).
 
 ## Lecciones aprendidas (errores que ya nos pasaron)
 - No abrir `agroapp.db` en VS Code: se corrompe.
@@ -153,9 +172,17 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
   adentro; si no, un campo vacío da error 500. Los tests lo detectaron.
 - Un campo vacío de un formulario llega como "" (texto vacío), no como null.
 - En las ventanas (dialog) el primer botón es "Cancelar": apretar Enter cierra sin guardar.
+- StaticFiles normaliza las rutas ("/web/css/../index.html" → index.html): por eso la lista de
+  rutas libres del login es EXACTA y no "todo lo que empiece con /web/css/". Hay un test.
+- Una sombra (box-shadow) de un menú escondido con translateX(-100%) asoma igual: ponerla solo abierto.
 
 ## Deuda técnica
-- FUTURA: la web y la API no tienen login (ok solo en local). Obligatorio antes de producción.
+- MENOR: el bloqueo por intentos fallidos vive en memoria (se reinicia con el backend) y es por
+  usuario, no por IP. Suficiente con pocos usuarios.
+- MENOR: el link "Descargar todo (Excel)" con la sesión vencida muestra el error 401 en JSON
+  (no va al login, porque es un link y no un fetch).
+- FUTURA: detrás de Cloudflare / HTTPS, uvicorn necesita `--proxy-headers` (o AGROAPP_COOKIE_SEGURA=1)
+  para que la cookie salga con Secure.
 - FUTURA: backups solo en la misma PC.
 - MENOR: el formulario de máquina y el de vencimiento están repetidos en dos HTML cada uno.
 - Estructura en carpetas desde el 30/09/2026 (antes todo suelto en la raíz).
@@ -175,5 +202,6 @@ programado por horas y lenguaje natural por Telegram (Gemini).
 También: repuestos asignables a varias máquinas (migración 5) y N° de serie del
 monitor en la máquina para licencias de piloto y suscripciones (migración 6), y especies que crea
 el usuario + grupos de animales + caravana repetible (migración 7). Se usa con datos reales.
-**Siguiente**: NAS (en otro chat) → GitHub → Docker → mudar la base → login web → WhatsApp.
+Login web hecho (migración 8) en la rama `claude/login`, junto con Químicos y Crías: falta mergear a main.
+**Siguiente**: NAS (en otro chat) → GitHub → Docker → mudar la base → WhatsApp.
 El detalle está en `docs/INICIO_PROYECTO.md`.

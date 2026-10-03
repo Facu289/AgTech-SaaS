@@ -6,6 +6,7 @@
 // ---------- Íconos (SVG de trazo, como en el diseño) ----------
 const ICONOS = {
   hoja: '<path d="M12 21V11"/><path d="M12 11C12 7 9 4.5 4.5 4.5 4.5 9 7.5 11 12 11Z"/><path d="M12 13c0-3.5 2.6-6 7.5-6 0 4.5-3 6-7.5 6Z"/>',
+  quimico: '<path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 15h9"/>',
   caja: '<path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/>',
   tractor: '<circle cx="7" cy="17" r="3"/><circle cx="18" cy="18" r="2"/><path d="M10 17h6"/><path d="M4 14V7h7l2 4h5v5"/>',
   vaca: '<path d="M4 9c0-2 1.5-4 4-4h8c2.5 0 4 2 4 4v6a2 2 0 0 1-2 2h-1v3"/><path d="M4 9v8h3v3"/><path d="M15 5 16 3"/><path d="M17 11h.01"/>',
@@ -32,6 +33,7 @@ const ICONOS = {
   desplegar: '<path d="M9 6l6 6-6 6"/>',
   lista: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
   cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
+  salir: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
 };
 
 function icono(nombre, tamanio = 18) {
@@ -104,6 +106,14 @@ function traducirError(tipo) {
   return errores[tipo] || "inválido";
 }
 
+// Si la sesión venció (o nunca entraste), el servidor responde 401: vamos al login.
+function irAlLoginSiHaceFalta(respuesta) {
+  if (respuesta.status === 401) {
+    location.href = "login.html";
+    throw new Error("Tenés que iniciar sesión.");
+  }
+}
+
 // api("GET", "/insumos")  |  api("POST", "/insumos", { nombre: ... })
 // Devuelve los datos, o lanza un Error con un mensaje entendible.
 async function api(metodo, url, datos) {
@@ -117,6 +127,7 @@ async function api(metodo, url, datos) {
   } catch {
     throw new Error("No se pudo conectar con el servidor. ¿Está corriendo el backend?");
   }
+  irAlLoginSiHaceFalta(respuesta);
   if (!respuesta.ok) {
     // Además del texto, el error guarda el código y los datos que mandó el servidor
     // (ej: "caravana_repetida": así la web puede preguntar "¿guardar igual?").
@@ -146,6 +157,7 @@ async function exportarExcel(nombre, titulo, columnas, filas) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nombre, titulo, columnas, filas }),
     });
+    irAlLoginSiHaceFalta(respuesta);
     if (!respuesta.ok) {
     // Además del texto, el error guarda el código y los datos que mandó el servidor
     // (ej: "caravana_repetida": así la web puede preguntar "¿guardar igual?").
@@ -438,8 +450,9 @@ const MENU = [
   {
     titulo: "Stock",
     enlaces: [
-      { pagina: "insumos", texto: "Insumos", href: "insumos.html", icono: "caja", contador: "stock_bajo" },
-      { pagina: "repuestos", texto: "Repuestos", href: "repuestos.html", icono: "engranaje" },
+      { pagina: "insumos", texto: "Insumos", href: "insumos.html", icono: "caja", contador: "stock_bajo", hoja: "insumos" },
+      { pagina: "quimicos", texto: "Químicos", href: "quimicos.html", icono: "quimico", contador: "stock_bajo", hoja: "quimicos" },
+      { pagina: "repuestos", texto: "Repuestos", href: "repuestos.html", icono: "engranaje", contador: "stock_bajo", hoja: "repuestos" },
       { pagina: "movimientos", texto: "Movimientos", href: "movimientos.html", icono: "flechas" },
     ],
   },
@@ -514,13 +527,16 @@ function armarEstructura() {
       const link = el("a", { href: enlace.href, title: enlace.texto, "aria-current": enlace.pagina === paginaActual ? "page" : null });
       link.innerHTML = icono(enlace.icono, 18);
       link.append(el("span", { className: "texto-nav" }, enlace.texto));
-      if (enlace.contador) link.append(el("span", { className: "contador-nav", dataset: { contador: enlace.contador }, hidden: true }));
+      if (enlace.contador) {
+        const dataset = enlace.hoja ? { contador: enlace.contador, hoja: enlace.hoja } : { contador: enlace.contador };
+        link.append(el("span", { className: "contador-nav", dataset, hidden: true }));
+      }
       bloque.append(link);
     }
     nav.append(bloque);
   }
 
-  const menu = el("aside", { className: "menu" }, el("div", { className: "menu-cabecera" }, crearLogo(), botonPlegar), nav);
+  const menu = el("aside", { className: "menu" }, el("div", { className: "menu-cabecera" }, crearLogo(), botonPlegar), nav, crearPieMenu());
 
   // Celular: barra de arriba con botón "Menú" y un fondo oscuro para cerrarlo.
   const botonMovil = el("button", { className: "boton boton-secundario", type: "button", "aria-label": "Abrir menú" });
@@ -538,12 +554,39 @@ function armarEstructura() {
   actualizarContadores();
 }
 
+// Abajo del menú: quién está usando la web y el botón "Salir".
+function crearPieMenu() {
+  const nombre = el("span", { className: "usuario-nombre texto-nav" });
+  const usuario = el("div", { className: "usuario-menu", title: "Usuario" }, el("span", { className: "usuario-icono" }), nombre);
+  usuario.firstChild.innerHTML = icono("persona", 18);
+  const salir = el("button", { className: "boton-salir", type: "button", title: "Salir", "aria-label": "Salir" });
+  salir.innerHTML = icono("salir", 18);
+  salir.append(el("span", { className: "texto-nav" }, "Salir"));
+  salir.addEventListener("click", async () => {
+    try {
+      await fetch("/logout", { method: "POST" });
+    } finally {
+      location.href = "login.html";
+    }
+  });
+  api("GET", "/yo")
+    .then((datos) => {
+      nombre.textContent = datos.usuario;
+      usuario.title = `Usuario: ${datos.usuario}`;
+    })
+    .catch(() => {});
+  return el("div", { className: "pie-menu" }, usuario, salir);
+}
+
 // Muestra en la barra lateral cuántos vencimientos y partos están cerca.
 async function actualizarContadores() {
   try {
     const alertas = await api("GET", "/alertas");
     for (const contador of document.querySelectorAll("[data-contador]")) {
-      const cantidad = alertas[contador.dataset.contador].length;
+      let lista = alertas[contador.dataset.contador];
+      // Stock bajo: cada página (Insumos, Químicos, Repuestos) cuenta solo los suyos.
+      if (contador.dataset.hoja) lista = lista.filter((item) => item.hoja === contador.dataset.hoja);
+      const cantidad = lista.length;
       contador.textContent = cantidad;
       contador.hidden = cantidad === 0;
       contador.title = `${cantidad} para revisar`;

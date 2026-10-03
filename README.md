@@ -22,6 +22,7 @@ Otros comandos:
 |---|---|
 | Tests | `python -m pytest` |
 | Backup manual | `python -m app.nucleo.backup` |
+| Crear usuario de la web (o cambiar contraseña) | `python -m app.usuarios.crear_usuario` |
 | Instalar dependencias | `pip install -r requirements.txt` |
 
 ## Estructura
@@ -41,6 +42,7 @@ agroapp/
 │   ├── insumos/            ┐
 │   ├── maquinaria/         │ cada área tiene:  db.py (SQL) · rutas.py (API) · telegram.py (bot)
 │   ├── ganaderia/          ┘
+│   ├── usuarios/           login: contraseñas (hash), sesiones, /login, /logout y el "portero"
 │   └── telegram/           el cerebro del bot
 │       ├── comandos.py       reparte cada mensaje al comando que corresponde
 │       ├── lenguaje_natural.py  Gemini: texto libre → comandos (con confirmación)

@@ -39,6 +39,22 @@ def hacer_backup(solo_si_no_hay_de_hoy=False):
     return destino
 
 
+def preparar_base():
+    """Deja la base lista para usar: backup primero y después tablas y migraciones.
+
+    Si hay migraciones pendientes (la estructura de la base va a cambiar),
+    SIEMPRE hacemos un backup antes, aunque ya haya uno de hoy.
+    La usan el backend al arrancar y los comandos de consola (ej: crear usuario).
+    """
+    database.verificar_ubicacion()
+    if database.migraciones_pendientes():
+        ruta = hacer_backup()
+        print(f"Backup antes de actualizar la base: {ruta.name if ruta else '(base nueva)'}")
+    else:
+        hacer_backup(solo_si_no_hay_de_hoy=True)
+    database.crear_tablas()
+
+
 def borrar_backups_viejos():
     """Deja solo los CANTIDAD_A_GUARDAR backups más nuevos."""
     # El nombre empieza con la fecha, así que ordenar por nombre = ordenar por fecha.

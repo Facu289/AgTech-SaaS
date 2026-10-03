@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrar · AgroApp</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<!-- Esta página NO carga comun.js: no tiene menú y no puede pedir datos (todavía no entraste). -->
+<body class="pagina-login">
+  <main class="login-caja">
+    <div class="login-logo">
+      <span class="logo-icono" id="logo-icono"></span>
+      <span>AgroApp</span>
+    </div>
+    <form class="tarjeta" id="form-login">
+      <h1>Entrar</h1>
+      <label class="campo"><span>Usuario</span>
+        <input name="usuario" required maxlength="50" autocomplete="username" autocapitalize="none" autofocus></label>
+      <label class="campo"><span>Contraseña</span>
+        <input name="contrasena" type="password" required autocomplete="current-password"></label>
+      <p class="mensaje error" hidden></p>
+      <button class="boton" type="submit">Entrar</button>
+    </form>
+  </main>
+  <script src="js/login.js"></script>
+</body>
+</html>

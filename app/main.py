@@ -10,6 +10,7 @@ Cada área está en su carpeta (app/insumos, app/maquinaria, app/ganaderia) con:
 import sqlite3
 from typing import Optional
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -26,23 +27,30 @@ from app.maquinaria import rutas as maquinaria_rutas
 from app.nucleo import backup, database, opciones
 from app.nucleo.utilidades import formatear_cantidad
 from app.telegram.comandos import generar_respuesta
+from app.usuarios import rutas as usuarios_rutas
 
-# Al iniciar: primero un backup, después las tablas y migraciones.
-# Si hay migraciones pendientes (la estructura de la base va a cambiar),
-# SIEMPRE hacemos un backup antes, aunque ya haya uno de hoy.
-database.verificar_ubicacion()
-if database.migraciones_pendientes():
-    ruta = backup.hacer_backup()
-    print(f"Backup antes de actualizar la base: {ruta.name if ruta else '(base nueva)'}")
-else:
-    backup.hacer_backup(solo_si_no_hay_de_hoy=True)
-database.crear_tablas()
+load_dotenv()  # Variables del .env (ej: AGROAPP_BOT_TOKEN).
+
+# Al iniciar: primero un backup, después las tablas y migraciones (ver backup.preparar_base).
+backup.preparar_base()
 
 app = FastAPI(title="AgroApp")
 app.include_router(insumos_rutas.router)
 app.include_router(maquinaria_rutas.router)
 app.include_router(ganaderia_rutas.router)
 app.include_router(exportar.router)
+app.include_router(usuarios_rutas.router)
+
+
+# ---------- Login ----------
+# Un "middleware" corre ANTES de cada pedido. Este es el portero: si no hay sesión
+# (ni es el bot con su token), corta el pedido acá y no llega a ningún endpoint.
+@app.middleware("http")
+async def exigir_login(request: Request, call_next):
+    corte = usuarios_rutas.revisar_pedido(request)
+    if corte is not None:
+        return corte
+    return await call_next(request)
 
 
 # ---------- Errores ----------

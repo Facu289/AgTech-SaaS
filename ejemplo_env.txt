@@ -9,3 +9,9 @@ TELEGRAM_USUARIOS_AUTORIZADOS=
 GEMINI_API_KEY=
 # Modelo de Gemini (opcional). Si Google lo da de baja, cambialo acá.
 GEMINI_MODEL=gemini-3.5-flash-lite
+
+# Login de la web: token con el que el bot entra a la API (va en el mismo .env del backend y del bot).
+# Inventá uno largo y al azar. Para generarlo:  python -c "import secrets; print(secrets.token_urlsafe(32))"
+AGROAPP_BOT_TOKEN=
+# Cookie de sesión solo por HTTPS (opcional). Poné 1 cuando la web esté detrás de HTTPS (Cloudflare, etc.).
+AGROAPP_COOKIE_SEGURA=

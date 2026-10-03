@@ -302,6 +302,31 @@ MIGRACIONES = [
         "CREATE INDEX idx_animales_caravana ON animales(caravana)",
         "CREATE INDEX idx_animales_categoria ON animales(categoria_id)",
     ],
+    # 8) Login de la web: usuarios y sesiones.
+    #    - La contraseña NO se guarda: se guarda su "hash" (una huella que no se puede dar vuelta).
+    #    - Cada sesión es un código al azar que vive en una cookie del navegador. En la base se
+    #      guarda la huella del código (sha256), no el código: si alguien copia la base, no puede
+    #      usar esas sesiones.
+    [
+        """
+        CREATE TABLE usuarios (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre          TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+            hash_contrasena TEXT    NOT NULL,
+            activo          INTEGER NOT NULL DEFAULT 1 CHECK (activo IN (0, 1)),
+            creado_en       TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+        )
+        """,
+        """
+        CREATE TABLE sesiones (
+            hash_token TEXT    PRIMARY KEY,
+            usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
+            creada_en  TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+            expira_en  TEXT    NOT NULL
+        )
+        """,
+        "CREATE INDEX idx_sesiones_usuario ON sesiones(usuario_id)",
+    ],
 ]
 
 

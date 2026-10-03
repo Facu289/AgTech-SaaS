@@ -30,13 +30,18 @@ def test_exportar_lo_que_se_ve(cliente):
 def test_exportar_todo(cliente, bot):
     bot("/nuevo glifosato herbicida litros")
     bot("/entrada 20 glifosato - compra")
+    bot("/nuevo urea fertilizante kg")
+    bot("/nuevo filtro filtros unidades")
     cliente.post("/maquinas", json={"nombre": "JD", "tipo": "tractor"})
     cliente.post("/animales", json={"caravana": "1234", "categoria_id": 1})  # 1 = Vaca (Vacuno)
     libro = abrir(cliente.get("/exportar/completo"))
-    assert libro.sheetnames == ["Insumos", "Movimientos", "Máquinas", "Services y arreglos", "Service programado",
-                                "Trabajos", "Vencimientos", "Contactos", "Animales", "Eventos de animales"]
-    insumos = libro["Insumos"]
-    assert [c.value for c in insumos[2]][:4] == ["glifosato", "Agroquímico", "Herbicida", 20]
+    assert libro.sheetnames == ["Insumos", "Químicos", "Repuestos", "Movimientos", "Máquinas", "Services y arreglos",
+                                "Service programado", "Trabajos", "Vencimientos", "Contactos", "Animales",
+                                "Eventos de animales"]
+    # Cada insumo en su hoja, igual que en la web.
+    assert [c.value for c in libro["Químicos"][2]][:4] == ["glifosato", "Agroquímico", "Herbicida", 20]
+    assert [fila[0].value for fila in libro["Insumos"].iter_rows(min_row=2)] == ["urea"]
+    assert [fila[0].value for fila in libro["Repuestos"].iter_rows(min_row=2)] == ["filtro"]
     assert libro["Movimientos"]["F2"].value == "compra"
     assert libro["Animales"]["A2"].value == "1234"
 

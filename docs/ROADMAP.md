@@ -16,6 +16,7 @@
 - [x] Backup automático diario de la base (+ manual con `python backup.py`, + antes de migrar)
 - [x] Subcategorías (herbicida, insecticida, filtros, correas...) y stock mínimo con alertas
 - [x] Repuestos (página propia, /repuestos) vinculables a una o varias máquinas
+- [x] Químicos en página propia (/quimicos) y tres hojas en el Excel completo (Insumos, Químicos, Repuestos)
 - [x] Eliminar insumo (si no tiene movimientos) o archivarlo (si tiene historial)
 - [ ] Ver historial de movimientos desde Telegram (/historial)  ← mini desafío (en la web ya está)
 
@@ -61,7 +62,9 @@
 - [ ] NAS listo (otro chat, según NAS_REQUISITOS.md)
 - [ ] Código en GitHub (repo privado)
 - [ ] Docker + docker-compose (api + bot) y mudar la base al NAS
-- [ ] Login en la web
+- [x] Login en la web: usuario y contraseña (hash scrypt), sesión con cookie (HttpOnly, SameSite=Lax,
+      Secure con HTTPS), página de login y botón Salir, toda la web y la API protegidas, el bot entra
+      con su token (AGROAPP_BOT_TOKEN), usuarios por consola (`python -m app.usuarios.crear_usuario`), migración 8
 - [ ] Bot de WhatsApp (Meta Cloud API + Cloudflare Tunnel), mismos comandos que Telegram
 - [ ] Backups fuera del NAS (nube)
 

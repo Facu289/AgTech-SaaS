@@ -14,9 +14,13 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
+# La API pide login. El bot entra con su propio token (el mismo valor en el .env del backend).
+BOT_TOKEN = os.getenv("AGROAPP_BOT_TOKEN", "").strip()
 
 if not TOKEN:
     raise SystemExit("Falta TELEGRAM_TOKEN en el archivo .env")
+if not BOT_TOKEN:
+    raise SystemExit("Falta AGROAPP_BOT_TOKEN en el archivo .env (ver ejemplo_env.txt)")
 
 
 def leer_usuarios_autorizados():
@@ -74,8 +78,12 @@ def pedir_respuesta_al_backend(texto, usuario_id):
         respuesta = requests.post(
             f"{BACKEND_URL}/mensaje",
             json={"texto": texto, "usuario": usuario_id},
+            headers={"Authorization": f"Bearer {BOT_TOKEN}"},
             timeout=45,  # Gemini puede tardar unos segundos en contestar.
         )
+        if respuesta.status_code == 401:
+            print("El backend rechazó el token del bot: revisá AGROAPP_BOT_TOKEN en el .env.")
+            return "⚠️ El bot no pudo entrar a AgroApp (token del bot incorrecto)."
         respuesta.raise_for_status()
         return respuesta.json()["respuesta"]
     except requests.RequestException as error:

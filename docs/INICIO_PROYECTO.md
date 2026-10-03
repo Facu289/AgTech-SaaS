@@ -1,7 +1,7 @@
 # AgroApp — Cómo seguir en un Proyecto nuevo
 
 > Resumen para retomar AgroApp desde cero en un **Proyecto** de Claude, sin depender de chats
-> anteriores. Estado al **01/10/2026**.
+> anteriores. Estado al **02/10/2026**.
 
 ## 1. Armar el Proyecto
 
@@ -56,7 +56,9 @@ Respondé en español (Argentina).
 
 **Funciona y se usa con datos reales** (en la PC con Windows):
 
-- **Insumos y repuestos**: stock con historial, subcategorías, stock mínimo, archivar.
+- **Insumos, químicos y repuestos**: tres páginas (y tres hojas en el Excel completo), stock
+  con historial, subcategorías, stock mínimo, archivar. Químicos = agroquímicos (se define en
+  `CATEGORIAS_QUIMICOS` de `app/nucleo/opciones.py`); en Telegram, `/quimicos`.
   Repuestos asignables a **varias máquinas** (tabla `insumo_maquinas`).
   **N° de serie del monitor** en la máquina: lo muestran sus licencias y suscripciones
   (nuevo tipo de vencimiento "Suscripción / app", también para apps sin máquina).
@@ -68,11 +70,15 @@ Respondé en español (Argentina).
   fecha probable de parto. Página **Crías**: resumen de partos y crías por especie (también `/crias`).
 - **Web**: diseño claro minimalista, menú izquierdo plegable, Inicio con alertas, filtros en
   todas las tablas, exportar a Excel (listado filtrado o todo).
+- **Login** (rama `claude/login`, falta mergear a main): usuario y contraseña, sesión con cookie,
+  botón Salir abajo del menú. Toda la web y la API piden login; el bot entra con su token.
+  Usuarios: `python -m app.usuarios.crear_usuario` (crea o cambia la contraseña).
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
-- **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 7**, backup diario y
+- **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 8** (usuarios y sesiones), backup diario y
   antes de cada migración.
-- **Tests**: 91 pasan (`python -m pytest`).
-- **Git**: último commit "Especies libres, grupos de animales y caravana repetible (migración 7)".
+- **Tests**: 116 pasan (`python -m pytest`) en la rama `claude/login`.
+- **Git**: Químicos (`claude/project-thread-kcdnm3`) y Crías (`claude/project-thread-nx62se`) están
+  combinadas en la rama `claude/login` junto con el login. **Falta el OK para mergear a main.**
 
 **En curso, en otro chat**: armado del NAS según `docs/NAS_REQUISITOS.md`.
 
@@ -102,9 +108,9 @@ Docker, IP, usuario, carpeta, Tailscale, Cloudflare, UPS, backups).
 5. Arrancar en el NAS y probar web y bot.
 6. **No volver a prender el bot en la PC**: dos bots con el mismo token a la vez chocan.
 
-### E. Login en la web
-Obligatorio antes de abrirla desde afuera (aunque sea por Tailscale): usuario y contraseña,
-contraseñas guardadas con hash, sesión con cookie.
+### E. Login en la web ✅ (hecho en la rama `claude/login`)
+Falta: mergear a main, poner `AGROAPP_BOT_TOKEN` en el `.env` y crear tu usuario.
+Al publicarla con HTTPS: `AGROAPP_COOKIE_SEGURA=1` (o uvicorn con `--proxy-headers`).
 
 ### F. Bot de WhatsApp
 - Meta WhatsApp Cloud API: cuenta de Meta for Developers, app, número de prueba.
@@ -131,7 +137,9 @@ Copia diaria de `datos/backups` a la nube (rclone u otro) y una prueba de restau
   - bot: `python bot/bot.py`
 - **Web**: http://127.0.0.1:8000/web/
 - **Variables del `.env`**: `TELEGRAM_TOKEN`, `TELEGRAM_USUARIOS_AUTORIZADOS`,
-  `GEMINI_API_KEY`, `GEMINI_MODEL` (por defecto `gemini-3.5-flash-lite`).
+  `GEMINI_API_KEY`, `GEMINI_MODEL` (por defecto `gemini-3.5-flash-lite`),
+  `AGROAPP_BOT_TOKEN` (el bot entra a la API con esto) y `AGROAPP_COOKIE_SEGURA` (1 con HTTPS).
+- **Crear usuario de la web / cambiar contraseña**: `python -m app.usuarios.crear_usuario`
 - **Si aparece "Could not import module 'main'"**: se usó el comando viejo. Es
   `uvicorn app.main:app`.
 - **Después de cambiar la web**: Ctrl+F5 en el navegador.

@@ -19,7 +19,8 @@ MODULOS = [
     "app.insumos.rutas", "app.maquinaria.rutas", "app.ganaderia.rutas",
     "app.alertas", "app.exportar",
     "app.telegram.notas", "app.insumos.telegram", "app.maquinaria.telegram", "app.ganaderia.telegram",
-    "app.telegram.lenguaje_natural", "app.telegram.comandos", "app.main",
+    "app.telegram.lenguaje_natural", "app.telegram.comandos",
+    "app.usuarios.db", "app.usuarios.rutas", "app.main",
 ]
 
 
@@ -36,11 +37,24 @@ def app(tmp_path, monkeypatch):
     return sys.modules["app.main"]
 
 
+USUARIO_PRUEBA = ("prueba", "clave-de-prueba")
+
+
 @pytest.fixture
-def cliente(app):
-    """Un 'navegador de mentira' para llamar a la API sin levantar uvicorn."""
+def cliente_anonimo(app):
+    """Un 'navegador de mentira' para llamar a la API sin levantar uvicorn. NO entró (sin login)."""
     from fastapi.testclient import TestClient
     return TestClient(app.app)
+
+
+@pytest.fixture
+def cliente(cliente_anonimo):
+    """El mismo navegador de mentira, pero ya logueado (guarda la cookie de sesión)."""
+    usuario, contrasena = USUARIO_PRUEBA
+    sys.modules["app.usuarios.db"].guardar_usuario(usuario, contrasena)
+    respuesta = cliente_anonimo.post("/login", json={"usuario": usuario, "contrasena": contrasena})
+    assert respuesta.status_code == 200, respuesta.text
+    return cliente_anonimo
 
 
 @pytest.fixture

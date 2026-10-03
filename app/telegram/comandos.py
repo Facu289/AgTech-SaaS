@@ -41,6 +41,7 @@ AYUDA = """Comandos de AgroApp
 
 📦 Stock
 /stock [filtro] - ver stock (ej: /stock herbicida)
+/quimicos [filtro] - ver químicos
 /repuestos [filtro] - ver repuestos
 /nuevo <nombre> <categoría o tipo> <unidad>
 /entrada <cantidad> <insumo> - motivo
@@ -76,6 +77,8 @@ COMANDOS = {
     "/start": lambda _: "¡Hola! Soy el bot de AgroApp 🌱. Escribí /ayuda para ver qué sé hacer.",
     "/ayuda": lambda _: AYUDA,
     "/stock": insumos_tg.comando_stock,
+    "/quimicos": insumos_tg.comando_quimicos,
+    "/químicos": insumos_tg.comando_quimicos,  # Por si lo escriben con tilde.
     "/repuestos": insumos_tg.comando_repuestos,
     "/nuevo": insumos_tg.comando_nuevo,
     "/entrada": lambda arg: insumos_tg.comando_movimiento("entrada", arg),
