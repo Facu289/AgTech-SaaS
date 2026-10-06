@@ -23,7 +23,7 @@ function dato(href, valor, nombre, extra, extraEsAlerta = false) {
   );
 }
 
-function mostrarResumen(insumos, maquinas, animales, alertas) {
+function mostrarResumen(insumos, maquinas, animales, alertas, lotes) {
   const activos = animales.filter((a) => a.estado === "activo");
   const prenadas = activos.filter((a) => a.estado_reproductivo === "prenada").length;
   const services = alertas.services.length;
@@ -39,6 +39,7 @@ function mostrarResumen(insumos, maquinas, animales, alertas) {
     datoStock("repuestos", "Repuestos"),
     dato("maquinas.html", maquinas.length, "Máquinas", services ? `${services} service(s) para hacer` : "Services al día", services > 0),
     dato("animales.html", activos.reduce((total, a) => total + a.cantidad, 0), "Animales activos", `${prenadas} preñada${prenadas === 1 ? "" : "s"}`),
+    dato("lotes.html", lotes.length, "Lotes", `${formatearCantidad(lotes.reduce((total, l) => total + (l.hectareas || 0), 0))} ha`),
   );
 }
 
@@ -95,16 +96,48 @@ function mostrarUltimos(movimientos) {
   if (movimientos.length === 0) lista.append(el("li", { className: "suave" }, "Todavía no hay movimientos."));
 }
 
+// ---------- Mapa de lotes ----------
+// La misma campaña que estás mirando en la página Lotes (o la más nueva).
+
+const contenedorMapa = document.getElementById("mapa-inicio");
+// Sin zoom con la rueda: si no, al bajar por la página el mapa se agranda sin querer.
+const mapa = hayMapa(contenedorMapa) ? crearMapaSatelital(contenedorMapa, { scrollWheelZoom: false }) : null;
+const capaLotes = mapa ? L.featureGroup().addTo(mapa) : null;
+let mapaEncuadrado = false;
+
+async function cargarLotes() {
+  const campanias = await api("GET", "/campanias");
+  const campania = campaniaRecordada(campanias);
+  const lotes = await api("GET", `/lotes${campania ? `?campania_id=${campania.id}` : ""}`);
+  document.getElementById("campania-inicio").textContent = campania ? `Campaña ${campania.nombre}` : "";
+  if (mapa) {
+    // Tocar un lote abre su ficha.
+    dibujarLotes(capaLotes, lotes, { alHacerClic: (lote) => (location.href = `lote.html?id=${lote.id}`) });
+    if (!mapaEncuadrado && capaLotes.getLayers().length) {
+      mapa.fitBounds(capaLotes.getBounds(), { padding: [16, 16], maxZoom: 16 });
+      mapaEncuadrado = true;
+    }
+  }
+  const leyenda = document.getElementById("leyenda-inicio");
+  if (lotes.length === 0) {
+    leyenda.replaceChildren(el("p", { className: "suave" }, "Todavía no dibujaste lotes. ", el("a", { href: "lotes.html" }, "Dibujá el primero")));
+  } else {
+    leyenda.replaceChildren(armarLeyenda(lotes));
+  }
+  return lotes;
+}
+
 async function cargar() {
   try {
-    const [insumos, maquinas, animales, alertas, movimientos] = await Promise.all([
+    const [insumos, maquinas, animales, alertas, movimientos, lotes] = await Promise.all([
       api("GET", "/insumos"),
       api("GET", "/maquinas"),
       api("GET", "/animales"),
       api("GET", "/alertas"),
       api("GET", "/movimientos?limite=6"),
+      cargarLotes(),
     ]);
-    mostrarResumen(insumos, maquinas, animales, alertas);
+    mostrarResumen(insumos, maquinas, animales, alertas, lotes);
     mostrarAtencion(alertas);
     mostrarUltimos(movimientos);
   } catch (error) {

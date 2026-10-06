@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 from app.ganaderia import db as ganaderia_db
 from app.insumos import db as insumos_db
+from app.lotes import db as lotes_db
 from app.maquinaria import db as maquinaria_db
 from app.nucleo import opciones
 
@@ -186,6 +187,14 @@ def hojas_completas() -> list:
          [[e["fecha"], caravana.get(e["animal_id"]), especie.get(e["animal_id"]), _etiqueta(opciones.TIPOS_EVENTO, e["tipo"]),
            _etiqueta(E, e["resultado"]) if e["resultado"] else "", e["crias_machos"] or None,
            e["crias_hembras"] or None, e["detalle"]] for e in sorted(eventos, key=lambda x: x["fecha"], reverse=True)]),
+        ("Lotes", ["Lote", "Hectáreas", "Archivado", "Observaciones"],
+         [[l["nombre"], l["hectareas"], "Sí" if l["archivado"] else "No", l["observaciones"]]
+          for l in lotes_db.listar_lotes(incluir_archivados=True)]),
+        ("Cultivos por lote", ["Campaña", "Lote", "Ciclo", "Cultivo", "Variedad / híbrido", "Siembra", "Cosecha",
+                               "Hectáreas", "Rinde (qq/ha)", "Observaciones"],
+         [[c["campania"], c["lote"], c["ciclo"].capitalize(), c["cultivo"], c["variedad"], c["fecha_siembra"],
+           c["fecha_cosecha"], c["hectareas"] or c["hectareas_lote"], c["rinde"], c["observaciones"]]
+          for c in lotes_db.listar_lote_cultivos()]),
     ]
 
 

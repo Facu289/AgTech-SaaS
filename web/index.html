@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inicio · AgroApp</title>
+  <!-- Leaflet: el mapa de los lotes (ver lotes.html). -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
   <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body data-pagina="inicio">
@@ -21,6 +24,22 @@
 
     <!-- Números principales: cada uno lleva a su sección -->
     <div class="resumen" id="resumen"></div>
+
+    <!-- Los lotes en el mapa, pintados por cultivo de la campaña -->
+    <section class="tarjeta" aria-labelledby="t-lotes">
+      <div class="seccion-encabezado">
+        <div class="tarjeta-titulo">
+          <div class="icono-caja" data-icono="mapa"></div>
+          <h2 id="t-lotes">Lotes</h2>
+          <span class="suave chico" id="campania-inicio"></span>
+        </div>
+        <a class="chico fuerte" href="lotes.html">Ver mapa completo</a>
+      </div>
+      <div class="inicio-mapa">
+        <div id="mapa-inicio" class="mapa mapa-inicio" aria-label="Mapa de los lotes"></div>
+        <div id="leyenda-inicio"></div>
+      </div>
+    </section>
 
     <div class="inicio-grilla">
       <!-- Lo que requiere atención -->
@@ -65,7 +84,10 @@
     </div>
   </main>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
   <script src="js/comun.js"></script>
+  <script src="js/comun-lotes.js"></script>
   <script src="js/inicio.js"></script>
 </body>
 </html>

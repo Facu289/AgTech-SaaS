@@ -74,10 +74,15 @@ Respondé en español (Argentina).
 - **Login** (rama `claude/login`, falta mergear a main): usuario y contraseña, sesión con cookie,
   botón Salir abajo del menú. Toda la web y la API piden login; el bot entra con su token.
   Usuarios: `python -m app.usuarios.crear_usuario` (crea o cambia la contraseña).
+- **Lotes en mapa** (rama `claude/lotes`, sale de `claude/project-thread-pfy3gt`; falta el OK para commit):
+  página Lotes con foto satelital, dibujar el lote, hectáreas automáticas o a mano, editar la forma,
+  campañas y cultivo por lote (primera y segunda) pintando el mapa, ficha de cada lote (rinde, producción,
+  trabajos de maquinaria), página Cultivos (colores y campañas) y el mapa en Inicio. Migraciones 9 y 10.
+  Sigue: actividades por lote.
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
-- **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 8** (usuarios y sesiones), backup diario y
+- **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 10** (lotes, cultivos y campañas), backup diario y
   antes de cada migración.
-- **Tests**: 126 pasan (`python -m pytest`) con lo del NAS.
+- **Tests**: 156 pasan (`python -m pytest`) con lo del NAS y Lotes.
 - **Preparado para el NAS** (rama `claude/project-thread-pfy3gt`, sale de `claude/login`):
   `Dockerfile`, `docker-compose.yml` (api + bot), `GET /salud` con healthcheck, backup diario
   aunque la app no se reinicie, rutas y zona horaria desde el `.env` y el script de mudanza

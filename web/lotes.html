@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lotes · AgroApp</title>
+  <!-- Leaflet (el mapa) y Leaflet-Geoman (dibujar y editar polígonos), desde un CDN.
+       "integrity" es la huella del archivo: si alguien lo cambiara en el CDN, el navegador no lo usa. -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.20.2/dist/leaflet-geoman.css"
+        integrity="sha384-++juJE6hRzkkV4Ri9H2C+3yjCTdEk4PaZxptm3cpgKKjuMcAHErn35Q/0sGitZCR" crossorigin="anonymous">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="lotes">
+  <main>
+    <div class="seccion-encabezado">
+      <div>
+        <h1>Lotes</h1>
+        <p class="subtitulo" id="estado">Cargando…</p>
+      </div>
+      <div class="acciones">
+        <button class="boton" type="button" id="boton-nuevo" data-icono="mas">Nuevo lote</button>
+      </div>
+    </div>
+
+    <!-- La campaña que se mira: pinta cada lote con el color de su cultivo. -->
+    <div class="barra-campania">
+      <label class="campo-en-linea"><span>Campaña</span>
+        <select id="campania" aria-label="Campaña"></select></label>
+      <button class="boton boton-secundario" type="button" id="nueva-campania" data-icono="mas">Nueva campaña</button>
+      <div id="leyenda"></div>
+    </div>
+
+    <div class="lotes-grilla">
+      <div class="mapa-caja">
+        <!-- Aparece mientras dibujás o editás un lote. -->
+        <div class="barra-mapa" id="barra-mapa" hidden>
+          <span id="barra-texto"></span>
+          <div class="barra-botones">
+            <button class="boton boton-secundario" type="button" id="barra-cancelar">Cancelar</button>
+            <button class="boton" type="button" id="barra-guardar" data-icono="check" hidden>Guardar forma</button>
+          </div>
+        </div>
+        <div id="mapa" class="mapa" aria-label="Mapa de los lotes"></div>
+      </div>
+
+      <aside class="tarjeta lista-lotes" aria-label="Lista de lotes">
+        <div class="lista-lotes-cabecera">
+          <div class="filtros">
+            <label class="buscador" data-icono-lupa>
+              <input id="buscar" type="search" placeholder="Buscar lote…" aria-label="Buscar lote" autocomplete="off">
+            </label>
+          </div>
+          <div class="lista-lotes-pie">
+            <p class="suave chico" id="total-hectareas"></p>
+            <label class="casilla chico"><input type="checkbox" id="ver-archivados"> Ver archivados</label>
+          </div>
+        </div>
+        <ul class="lotes" id="lista"></ul>
+      </aside>
+    </div>
+  </main>
+
+  <dialog class="ventana" id="ventana-lote" aria-labelledby="t-lote">
+    <form method="dialog" id="form-lote">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="mapa"></div>
+        <h2 id="t-lote">Nuevo lote</h2>
+      </div>
+      <div class="campos" style="--columnas: 1fr 1fr">
+        <label class="campo"><span>Nombre</span><input name="nombre" required maxlength="80" autocomplete="off" placeholder="Ej: La Loma"></label>
+        <label class="campo"><span>Hectáreas</span><input name="hectareas" inputmode="decimal" autocomplete="off" placeholder="Del dibujo"></label>
+        <p class="ayuda" id="ayuda-hectareas" style="grid-column: 1 / -1"></p>
+        <label class="campo" style="grid-column: 1 / -1"><span>Observaciones</span><textarea name="observaciones" maxlength="1000" placeholder="Ej: loma arenosa, entra por la tranquera norte…"></textarea></label>
+      </div>
+      <p class="mensaje" hidden></p>
+      <div class="ventana-pie">
+        <!-- type="button": así Enter guarda (y no cancela). -->
+        <button class="boton boton-secundario" type="button" value="cancelar">Cancelar</button>
+        <button class="boton" type="submit" data-icono="check">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.20.2/dist/leaflet-geoman.js"
+          integrity="sha384-smcfdVnOMup31VRg3qwcAAOj5JHZs5+Q1IX3dUWwtjU2VvQWRaDr6JYC1o0OIgsl" crossorigin="anonymous"></script>
+  <script src="js/comun.js"></script>
+  <script src="js/comun-lotes.js"></script>
+  <script src="js/lotes.js"></script>
+</body>
+</html>

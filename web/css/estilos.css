@@ -855,7 +855,7 @@ td.numero {
 /* ---------- Números destacados ---------- */
 .resumen {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
 }
 
@@ -1175,5 +1175,347 @@ dialog.ventana form {
 
   .seccion-encabezado h1 {
     font-size: 21px;
+  }
+}
+
+/* ---------- Lotes (mapa) ---------- */
+.lotes-grilla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 16px;
+  align-items: start;
+}
+
+.mapa-caja {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* z-index 0 + position: el mapa arma su propia "pila" de capas. Sin esto, las capas de
+   Leaflet (z-index 400 a 1000) quedaban por ENCIMA del menú del celular. */
+.mapa {
+  position: relative;
+  z-index: 0;
+  height: calc(100vh - 190px);
+  min-height: 420px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+}
+
+.barra-mapa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--ambar-borde);
+  border-radius: var(--radio);
+  background: var(--ambar-fondo);
+  font-size: 14px;
+}
+
+.barra-mapa[hidden] {
+  display: none;
+}
+
+.barra-botones {
+  display: flex;
+  gap: 8px;
+}
+
+.lista-lotes {
+  padding: 14px;
+  gap: 10px;
+  max-height: calc(100vh - 140px);
+  overflow: auto;
+}
+
+.lista-lotes .filtros > *,
+.lista-lotes .filtros .buscador {
+  flex: 1 1 100%;
+  max-width: none;
+}
+
+.lista-lotes-cabecera {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lista-lotes-cabecera p {
+  margin: 0;
+}
+
+.lotes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lote {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 6px 8px 0;
+  border-radius: var(--radio);
+}
+
+.lote-cabeza {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Los cultivos del lote (botoncitos con su color). */
+.lote-cultivos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-left: 8px;
+}
+
+.boton-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo);
+  font: inherit;
+  font-size: 12px;
+  color: var(--etiqueta);
+  cursor: pointer;
+}
+
+.boton-chip:hover {
+  border-color: var(--acento);
+}
+
+.boton-chip.agregar {
+  border-style: dashed;
+  color: var(--texto-suave);
+}
+
+.lista-lotes-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lote.elegido {
+  background: var(--acento-suave);
+}
+
+.lote-principal {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lote-ha {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lote-detalle {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Mientras se dibuja o edita en el mapa, la lista no se puede tocar. */
+.dibujando .lista-lotes {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Nombre del lote (y sus cultivos) escrito encima del polígono. */
+.leaflet-tooltip.etiqueta-lote {
+  background: rgba(17, 24, 39, 0.55);
+  border: 0;
+  box-shadow: none;
+  color: #FFFFFF;
+  padding: 1px 6px;
+  text-align: center;
+}
+
+.etiqueta-lote strong,
+.etiqueta-lote small {
+  display: block;
+}
+
+.etiqueta-lote small {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+/* Barra de la campaña (arriba del mapa de Lotes). */
+.barra-campania {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.campo-en-linea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--etiqueta);
+}
+
+.campo-en-linea select {
+  min-width: 120px;
+}
+
+/* Cuadradito de color + nombre del cultivo. */
+.cultivo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.cultivo-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(17, 24, 39, 0.25);
+  flex-shrink: 0;
+}
+
+.leyenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 13px;
+}
+
+.leyenda li {
+  display: inline-flex;
+  gap: 6px;
+}
+
+/* Un select con un botón al lado (ventana de cultivo: campaña + "Nueva"). */
+.fila-con-boton {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.fila-con-boton select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Ficha del lote: mapa a la izquierda, datos a la derecha. */
+.ficha-lote {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.mapa.mapa-chico {
+  height: 340px;
+  min-height: 0;
+}
+
+/* Lote sin dibujo: un cartel encima del mapa. */
+.mapa[data-vacio]::after {
+  content: attr(data-vacio);
+  position: absolute;
+  inset: auto 12px 12px 12px;
+  z-index: 1000;
+  padding: 8px 12px;
+  border-radius: var(--radio);
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Inicio: mapa grande y la leyenda al costado. */
+.inicio-mapa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 16px;
+  align-items: start;
+}
+
+.inicio-mapa .leyenda {
+  flex-direction: column;
+}
+
+.mapa.mapa-inicio {
+  height: 380px;
+  min-height: 0;
+}
+
+/* Página Cultivos: dos tarjetas lado a lado. */
+.cultivos-grilla {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.leaflet-tooltip.etiqueta-lote::before {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  /* Celular: el mapa arriba (60 % de la pantalla) y la lista abajo. */
+  .lotes-grilla {
+    grid-template-columns: 1fr;
+  }
+
+  .mapa {
+    height: 60vh;
+    min-height: 320px;
+  }
+
+  .lista-lotes {
+    max-height: none;
+  }
+
+  .ficha-lote,
+  .inicio-mapa,
+  .cultivos-grilla {
+    grid-template-columns: 1fr;
+  }
+
+  .mapa.mapa-inicio {
+    height: 300px;
+  }
+
+  .inicio-mapa .leyenda {
+    flex-direction: row;
+  }
+
+  /* Los créditos de las fotos ocupan todo el ancho abajo: la escala va un poco más arriba. */
+  .mapa .leaflet-control-scale {
+    margin-bottom: 24px;
   }
 }

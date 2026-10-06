@@ -333,6 +333,71 @@ MIGRACIONES = [
         """,
         "CREATE INDEX idx_sesiones_usuario ON sesiones(usuario_id)",
     ],
+    # 9) Lotes del campo, dibujados en el mapa.
+    #    - geometria: el polígono en formato GeoJSON, guardado como TEXTO (SQLite no tiene
+    #      un tipo "mapa"; GeoJSON es el formato estándar que entienden Leaflet y casi todo).
+    #    - hectareas: las calcula la app a partir del dibujo, pero se pueden corregir a mano.
+    [
+        """
+        CREATE TABLE lotes (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre         TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+            geometria      TEXT,
+            hectareas      REAL    CHECK (hectareas IS NULL OR hectareas >= 0),
+            observaciones  TEXT    NOT NULL DEFAULT '',
+            archivado      INTEGER NOT NULL DEFAULT 0 CHECK (archivado IN (0, 1)),
+            creado_en      TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+            actualizado_en TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+        )
+        """,
+    ],
+    # 10) Cultivos, campañas y qué se sembró en cada lote.
+    #    - cultivos: los crea el usuario (vienen algunos cargados), cada uno con su color para el mapa.
+    #    - campanias: "2026/27"... La campaña agrícola cruza dos años, por eso tiene nombre y no fecha.
+    #    - lote_cultivos: un lote, en una campaña, tiene un cultivo de PRIMERA y, si hay, uno de
+    #      SEGUNDA (ej: trigo y después soja de segunda). Por eso el UNIQUE es (lote, campaña, ciclo).
+    [
+        """
+        CREATE TABLE cultivos (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre    TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+            color     TEXT    NOT NULL DEFAULT '#9CA3AF'
+                      CHECK (length(color) = 7 AND color GLOB '#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]'),
+            creado_en TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+        )
+        """,
+        """
+        INSERT INTO cultivos (nombre, color) VALUES
+            ('Soja', '#16A34A'), ('Maíz', '#EAB308'), ('Trigo', '#D97706'), ('Girasol', '#F97316'),
+            ('Sorgo', '#B91C1C'), ('Maní', '#92400E'), ('Cebada', '#A78BFA'), ('Alfalfa', '#0D9488')
+        """,
+        """
+        CREATE TABLE campanias (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre    TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+            creado_en TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+        )
+        """,
+        """
+        CREATE TABLE lote_cultivos (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            lote_id       INTEGER NOT NULL REFERENCES lotes(id),
+            campania_id   INTEGER NOT NULL REFERENCES campanias(id),
+            cultivo_id    INTEGER NOT NULL REFERENCES cultivos(id),
+            ciclo         TEXT    NOT NULL DEFAULT 'primera' CHECK (ciclo IN ('primera', 'segunda')),
+            variedad      TEXT    NOT NULL DEFAULT '',
+            fecha_siembra TEXT,
+            fecha_cosecha TEXT,
+            hectareas     REAL    CHECK (hectareas IS NULL OR hectareas > 0),
+            rinde         REAL    CHECK (rinde IS NULL OR rinde >= 0),
+            observaciones TEXT    NOT NULL DEFAULT '',
+            creado_en     TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+            UNIQUE (lote_id, campania_id, ciclo)
+        )
+        """,
+        "CREATE INDEX idx_lote_cultivos_campania ON lote_cultivos(campania_id)",
+        "CREATE INDEX idx_lote_cultivos_cultivo ON lote_cultivos(cultivo_id)",
+    ],
 ]
 
 

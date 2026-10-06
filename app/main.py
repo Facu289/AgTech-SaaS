@@ -24,6 +24,8 @@ from app.ganaderia import db as ganaderia_db
 from app.ganaderia import rutas as ganaderia_rutas
 from app.insumos import db as insumos_db
 from app.insumos import rutas as insumos_rutas
+from app.lotes import db as lotes_db
+from app.lotes import rutas as lotes_rutas
 from app.maquinaria import db as maquinaria_db
 from app.maquinaria import rutas as maquinaria_rutas
 from app.nucleo import backup, database, opciones
@@ -53,6 +55,7 @@ app = FastAPI(title="AgroApp", lifespan=al_prender_y_apagar)
 app.include_router(insumos_rutas.router)
 app.include_router(maquinaria_rutas.router)
 app.include_router(ganaderia_rutas.router)
+app.include_router(lotes_rutas.router)
 app.include_router(exportar.router)
 app.include_router(usuarios_rutas.router)
 
@@ -76,6 +79,7 @@ NO_ENCONTRADO = {
     insumos_db.InsumoNoEncontrado: "No existe ese insumo.",
     maquinaria_db.MaquinaNoEncontrada: "No existe esa máquina.",
     ganaderia_db.AnimalNoEncontrado: "No existe ese animal.",
+    lotes_db.LoteNoEncontrado: "No existe ese lote.",
 }
 
 

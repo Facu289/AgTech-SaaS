@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lote · AgroApp</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="lotes">
+  <main>
+    <a class="volver" href="lotes.html" data-icono="flecha_izq">Volver al mapa</a>
+
+    <div class="seccion-encabezado">
+      <div>
+        <h1 id="titulo">Cargando…</h1>
+        <p class="subtitulo" id="subtitulo"></p>
+      </div>
+      <div class="acciones" id="acciones-ficha" hidden>
+        <a class="boton boton-secundario" id="boton-mapa" data-icono="mapa">Editar en el mapa</a>
+        <button class="boton" type="button" id="boton-cultivo" data-icono="mas">Agregar cultivo</button>
+      </div>
+    </div>
+
+    <div class="ficha-lote">
+      <div id="mapa" class="mapa mapa-chico" aria-label="Mapa del lote"></div>
+      <section class="tarjeta" aria-labelledby="t-datos">
+        <div class="tarjeta-titulo">
+          <div class="icono-caja" data-icono="lista"></div>
+          <h2 id="t-datos">Datos</h2>
+        </div>
+        <dl class="ficha-datos" id="datos"></dl>
+      </section>
+    </div>
+
+    <section class="tarjeta" aria-labelledby="t-cultivos">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="hoja"></div>
+        <h2 id="t-cultivos">Cultivos por campaña</h2>
+      </div>
+      <div class="contenedor-tabla">
+        <table>
+          <thead>
+            <tr><th>Campaña</th><th>Cultivo</th><th>Variedad / híbrido</th><th>Siembra</th><th>Cosecha</th>
+              <th class="numero">Hectáreas</th><th class="numero">Rinde (qq/ha)</th><th class="numero">Producción (t)</th>
+              <th>Observaciones</th><th><span hidden>Acciones</span></th></tr>
+          </thead>
+          <tbody id="tabla-cultivos"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="tarjeta" aria-labelledby="t-trabajos">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="tractor"></div>
+        <h2 id="t-trabajos">Trabajos de maquinaria en este lote</h2>
+      </div>
+      <p class="ayuda">Los trabajos cargados en Maquinaria cuyo «lote» se llama igual que este.</p>
+      <div class="contenedor-tabla">
+        <table>
+          <thead>
+            <tr><th>Fecha</th><th>Máquina</th><th>Trabajo</th><th class="numero">Hectáreas</th><th>Cultivo</th><th>Observaciones</th></tr>
+          </thead>
+          <tbody id="tabla-trabajos"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+  <script src="js/comun.js"></script>
+  <script src="js/comun-lotes.js"></script>
+  <script src="js/lote.js"></script>
+</body>
+</html>

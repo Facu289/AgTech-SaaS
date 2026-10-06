@@ -38,6 +38,8 @@ MISMA base: lo que se carga en una se ve en la otra.
 - Frontend: **HTML + CSS + JavaScript puro** con `fetch()`, servido por FastAPI (`/web`).
   Diseño "claro minimalista": blanco, grises y acento verde #0F9D6E; fuente del sistema
   (funciona sin internet); menú izquierdo plegable. React más adelante.
+- **Mapa de lotes**: Leaflet 1.9.4 + Leaflet-Geoman 2.20.2 (dibujar/editar polígonos) desde el CDN
+  unpkg con `integrity` (huella SHA-384); fondo satelital Esri World Imagery (sin clave). Necesita internet.
 - openpyxl para exportar a Excel. Gemini (Google) para entender mensajes en lenguaje natural.
 - pytest + httpx para tests. `.env` para secretos. Git para versionar.
 - Docker + Docker Compose para el NAS: una imagen (`Dockerfile`, Python 3.14-slim) y dos servicios
@@ -50,6 +52,8 @@ agroapp/
 ├── app/         ← backend. main.py + alertas.py + exportar.py
 │   ├── nucleo/    database (conexión, migraciones), backup, opciones, tipos, utilidades
 │   ├── insumos/ maquinaria/ ganaderia/   cada una: db.py (SQL) · rutas.py (API) · telegram.py (bot)
+│   ├── lotes/     db.py · rutas.py · geometria.py (validar el polígono y calcular hectáreas). También cultivos,
+│   │              campañas y cultivo por lote. Sin Telegram todavía
 │   ├── usuarios/  login: db.py (hash y sesiones) · rutas.py (/login, /logout, /yo y el portero) · crear_usuario.py
 │   └── telegram/  comandos.py (reparte mensajes) · lenguaje_natural.py (Gemini) · notas.py
 ├── bot/bot.py   ← cartero Telegram ↔ backend
@@ -131,6 +135,18 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
 - `usuarios` (migración 8): nombre (UNIQUE NOCASE), hash_contrasena ("scrypt$N$r$p$sal$huella"),
   activo. `sesiones`: hash_token (sha256 del token de la cookie, nunca el token), usuario_id,
   expira_en (30 días). Cambiar la contraseña cierra las sesiones de ese usuario.
+- `lotes` (migración 9): nombre (UNIQUE NOCASE), geometria (polígono GeoJSON como TEXTO, puede ser NULL),
+  hectareas (las del dibujo, o escritas a mano), observaciones, archivado, creado_en, actualizado_en.
+  La API devuelve además `hectareas_calculadas` (las del dibujo) para mostrar si se cargaron a mano.
+  Con cultivos cargados no se elimina: se archiva.
+- `cultivos` (migración 10): nombre (UNIQUE NOCASE), color "#RRGGBB" (pinta el mapa). Vienen 8 cargados.
+- `campanias`: nombre ("2026/27", UNIQUE NOCASE). Orden: de la más nueva a la más vieja (por nombre).
+- `lote_cultivos`: lote_id, campania_id, cultivo_id, ciclo (primera/segunda), variedad, fecha_siembra,
+  fecha_cosecha, hectareas (vacío = todo el lote), rinde (qq/ha), observaciones. UNIQUE (lote, campaña, ciclo):
+  un lote tiene un cultivo de primera y uno de segunda por campaña (ej: trigo → soja 2ª).
+  Cultivos y campañas usados en algún lote no se eliminan.
+  Hectáreas = área geodésica con el radio de la Tierra en la latitud del lote (elipsoide WGS84):
+  la misma cuenta en `app/lotes/geometria.py` y en `web/js/lotes.js` (si cambia una, cambiar la otra).
 - **Migraciones**: lista `MIGRACIONES` en database.py. Nunca editar una ya aplicada: agregar otra.
   Antes de migrar se hace un backup automático.
 
@@ -181,6 +197,19 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
   `integrity_check` y `foreign_key_check`, abriendo la copia solo para leer. Se niega si el backend
   de la PC responde en /salud.
 
+- Lotes: polígono en GeoJSON guardado como texto en SQLite (sin SpatiaLite ni PostGIS: con decenas de
+  lotes no hace falta). Hectáreas calculadas por el servidor si vienen vacías; la web manda vacío cuando no
+  tocaste el número propuesto, así siguen "automáticas" al editar la forma. Polígonos que se cruzan sobre
+  sí mismos: los frena Geoman en la web (el servidor no lo revisa).
+
+- Campañas por nombre ("2026/27") y no por fechas: la campaña agrícola cruza dos años y la fina y la gruesa
+  se superponen. La campaña que se mira se recuerda en el navegador (localStorage): Inicio y Lotes muestran la
+  misma. Mapa: relleno = color del cultivo de primera; borde punteado = el de segunda.
+- Web de lotes: `web/js/comun-lotes.js` tiene lo compartido (mapa satelital, colores, leyenda y las ventanas de
+  campaña y de cultivo, armadas con JavaScript para no repetir el HTML en cada página). Páginas: Lotes (mapa
+  completo, dibujar), lote.html?id= (ficha: cultivos por campaña, rinde, producción en t y trabajos de
+  maquinaria del lote, buscados por nombre), Cultivos (cultivos con color y campañas) y el mapa en Inicio.
+
 ## Lecciones aprendidas (errores que ya nos pasaron)
 - No abrir `agroapp.db` en VS Code: se corrompe.
 - `.venv\.gitignore` contiene `*`: no moverlo a la raíz.
@@ -195,8 +224,17 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - StaticFiles normaliza las rutas ("/web/css/../index.html" → index.html): por eso la lista de
   rutas libres del login es EXACTA y no "todo lo que empiece con /web/css/". Hay un test.
 - Una sombra (box-shadow) de un menú escondido con translateX(-100%) asoma igual: ponerla solo abierto.
+- Leaflet mide el mapa al arrancar: si después cambia de tamaño, quedan franjas grises. Se arregla con
+  un ResizeObserver que llama a `mapa.invalidateSize()`. Y el contenedor del mapa necesita
+  `position: relative; z-index: 0` para que sus capas no tapen el menú del celular.
 
 ## Deuda técnica
+- MENOR: el servidor no revisa si un polígono se cruza sobre sí mismo ni si dos lotes se superponen.
+- MENOR: la página Lotes necesita internet (Leaflet y Geoman por CDN, fotos de Esri). Si un día molesta,
+  se pueden copiar Leaflet y Geoman a web/ (las fotos siempre necesitan internet).
+- MENOR: los lotes no tienen comando de Telegram. (El Excel completo ya trae Lotes y Cultivos por lote).
+- MENOR: los trabajos de maquinaria se unen al lote por el NOMBRE escrito (texto libre), no por un id. Si se
+  renombra un lote, sus trabajos viejos dejan de aparecer en la ficha.
 - MENOR: el bloqueo por intentos fallidos vive en memoria (se reinicia con el backend) y es por
   usuario, no por IP. Suficiente con pocos usuarios.
 - MENOR: el link "Descargar todo (Excel)" con la sesión vencida muestra el error 401 en JSON
@@ -229,5 +267,8 @@ el usuario + grupos de animales + caravana repetible (migración 7). Se usa con 
 Login web hecho (migración 8) en la rama `claude/login`, junto con Químicos y Crías: falta mergear a main.
 Preparado para el NAS (rama `claude/project-thread-pfy3gt`): Docker, /salud, backup continuo, rutas por .env y script
 de mudanza. Falta probar Docker en el NAS.
+Lotes en mapa (rama `claude/lotes`, migraciones 9 y 10): página Lotes con satélite, dibujar/editar/borrar
+polígonos, hectáreas automáticas o a mano, cultivos con color, campañas, cultivo por lote (primera y segunda),
+ficha del lote y mapa en Inicio.
 **Siguiente**: NAS listo (otro chat) → instalar y mudar con `docs/NAS_INSTALAR.md` → WhatsApp.
 El detalle está en `docs/INICIO_PROYECTO.md`.

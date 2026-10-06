@@ -58,6 +58,16 @@
 - [x] Mensajes sin comando interpretados con Gemini ("gasté 20 litros de glifosato en el lote 4")
 - [x] Confirmación con "sí"/"no" antes de registrar; consultas se responden directo
 
+## 🚧 Agricultura — lotes en mapa
+- [x] Paso 1: página Lotes con mapa satelital (Leaflet + Esri), dibujar el polígono, nombre y observaciones,
+      hectáreas calculadas solas (editables a mano), lista al costado, editar forma, eliminar (migración 9)
+- [x] Cultivos con color (página Cultivos, que también tiene las campañas) — migración 10
+- [x] Campañas: cultivo por lote y por campaña, primera y segunda; el mapa pintado por cultivo, con leyenda
+- [x] Ficha del lote: cultivos por campaña, variedad, fechas, rinde (qq/ha), producción y trabajos de maquinaria
+- [x] Mapa de lotes en Inicio (campaña elegida, leyenda con hectáreas por cultivo)
+- [ ] Actividades por lote (aplicaciones con insumos del stock, labores) y avances de siembra/cosecha
+- [ ] Unir los trabajos de maquinaria al lote por id (hoy es por nombre escrito)
+
 ## Próximo (producción en el NAS — detalle en INICIO_PROYECTO.md)
 - [ ] NAS listo (otro chat, según NAS_REQUISITOS.md)
 - [x] Código en GitHub (`Facu289/AgTech-SaaS`; confirmar que sea privado)

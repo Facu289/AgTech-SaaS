@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cultivos · AgroApp</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="cultivos">
+  <main>
+    <div class="seccion-encabezado">
+      <div>
+        <h1>Cultivos y campañas</h1>
+        <p class="subtitulo" id="estado">Cargando…</p>
+      </div>
+    </div>
+    <p class="ayuda">El color de cada cultivo es el que pinta los lotes en el mapa. Un cultivo o una campaña
+      que ya se usó en algún lote no se puede eliminar (sí cambiarle el nombre o el color).</p>
+
+    <div class="cultivos-grilla">
+      <section class="tarjeta" aria-labelledby="t-cultivos">
+        <div class="seccion-encabezado">
+          <div class="tarjeta-titulo">
+            <div class="icono-caja" data-icono="hoja"></div>
+            <h2 id="t-cultivos">Cultivos</h2>
+          </div>
+          <button class="boton" type="button" id="boton-cultivo" data-icono="mas">Nuevo cultivo</button>
+        </div>
+        <div class="contenedor-tabla">
+          <table>
+            <thead><tr><th>Cultivo</th><th class="numero">Veces usado</th><th><span hidden>Acciones</span></th></tr></thead>
+            <tbody id="tabla-cultivos"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="tarjeta" aria-labelledby="t-campanias">
+        <div class="seccion-encabezado">
+          <div class="tarjeta-titulo">
+            <div class="icono-caja" data-icono="calendario"></div>
+            <h2 id="t-campanias">Campañas</h2>
+          </div>
+          <button class="boton" type="button" id="boton-campania" data-icono="mas">Nueva campaña</button>
+        </div>
+        <div class="contenedor-tabla">
+          <table>
+            <thead><tr><th>Campaña</th><th class="numero">Cultivos cargados</th><th><span hidden>Acciones</span></th></tr></thead>
+            <tbody id="tabla-campanias"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <dialog class="ventana" id="ventana-cultivo" aria-labelledby="t-ventana-cultivo">
+    <form method="dialog" id="form-cultivo">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="hoja"></div>
+        <h2 id="t-ventana-cultivo">Nuevo cultivo</h2>
+      </div>
+      <div class="campos" style="--columnas: 2fr 1fr">
+        <label class="campo"><span>Nombre</span><input name="nombre" required maxlength="40" autocomplete="off" placeholder="Ej: Poroto"></label>
+        <label class="campo"><span>Color en el mapa</span><input name="color" type="color" value="#16A34A"></label>
+      </div>
+      <p class="mensaje" hidden></p>
+      <div class="ventana-pie">
+        <button class="boton boton-secundario" type="button" value="cancelar">Cancelar</button>
+        <button class="boton" type="submit" data-icono="check">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="ventana" id="ventana-campania" aria-labelledby="t-ventana-campania">
+    <form method="dialog" id="form-campania">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="calendario"></div>
+        <h2 id="t-ventana-campania">Cambiar nombre de la campaña</h2>
+      </div>
+      <div class="campos" style="--columnas: 1fr">
+        <label class="campo"><span>Nombre</span><input name="nombre" required maxlength="20" autocomplete="off"></label>
+      </div>
+      <p class="mensaje" hidden></p>
+      <div class="ventana-pie">
+        <button class="boton boton-secundario" type="button" value="cancelar">Cancelar</button>
+        <button class="boton" type="submit" data-icono="check">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/comun.js"></script>
+  <script src="js/comun-lotes.js"></script>
+  <script src="js/cultivos.js"></script>
+</body>
+</html>

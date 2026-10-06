@@ -33,6 +33,7 @@ const ICONOS = {
   desplegar: '<path d="M9 6l6 6-6 6"/>',
   lista: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
   cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
+  mapa: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/>',
   salir: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
 };
 
@@ -462,6 +463,13 @@ const MENU = [
       { pagina: "maquinas", texto: "Maquinaria", href: "maquinas.html", icono: "tractor", contador: "services" },
       { pagina: "vencimientos", texto: "Vencimientos", href: "vencimientos.html", icono: "calendario", contador: "vencimientos" },
       { pagina: "contactos", texto: "Contactos", href: "contactos.html", icono: "persona" },
+    ],
+  },
+  {
+    titulo: "Agricultura",
+    enlaces: [
+      { pagina: "lotes", texto: "Lotes", href: "lotes.html", icono: "mapa" },
+      { pagina: "cultivos", texto: "Cultivos", href: "cultivos.html", icono: "hoja" },
     ],
   },
   {

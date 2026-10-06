@@ -44,6 +44,7 @@ agroapp/
 │   ├── insumos/            ┐
 │   ├── maquinaria/         │ cada área tiene:  db.py (SQL) · rutas.py (API) · telegram.py (bot)
 │   ├── ganaderia/          ┘
+│   ├── lotes/              lotes en el mapa, cultivos y campañas: db.py · rutas.py · geometria.py (hectáreas)
 │   ├── usuarios/           login: contraseñas (hash), sesiones, /login, /logout y el "portero"
 │   └── telegram/           el cerebro del bot
 │       ├── comandos.py       reparte cada mensaje al comando que corresponde
@@ -63,5 +64,7 @@ agroapp/
 - Agregar una categoría, tipo o unidad → `app/nucleo/opciones.py`
 - Agregar una especie o categoría de animal → desde la web, página **Especies** (están en la base)
 - Cambiar colores de la web → variables al principio de `web/css/estilos.css`
+- El mapa de Lotes (fondo satelital, estilo de los polígonos, leyenda) → `web/js/comun-lotes.js`
+- El color de un cultivo o una campaña nueva → desde la web, página **Cultivos**
 - Un comando nuevo de Telegram → el `telegram.py` del área + `COMANDOS` en `app/telegram/comandos.py`
 - Una columna nueva en la base → una migración nueva al final de `MIGRACIONES` en `app/nucleo/database.py`
