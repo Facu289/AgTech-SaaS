@@ -1473,6 +1473,21 @@ dialog.ventana form {
   min-height: 0;
 }
 
+/* Ventana de importar lotes: más ancha y con la tabla con scroll. */
+dialog.ventana.ventana-ancha {
+  width: min(860px, calc(100vw - 32px));
+}
+
+.tabla-importar {
+  max-height: 46vh;
+  overflow: auto;
+}
+
+.tabla-importar input:not([type="checkbox"]) {
+  width: 100%;
+  min-width: 140px;
+}
+
 /* Página Cultivos: dos tarjetas lado a lado. */
 .cultivos-grilla {
   display: grid;

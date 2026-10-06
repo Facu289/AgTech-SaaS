@@ -2,13 +2,17 @@
 
 Los usan las páginas web/lotes.html, web/lote.html (ficha), web/cultivos.html y el mapa de Inicio.
 """
+import base64
+import binascii
+from datetime import date
 from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from fastapi.responses import Response
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from app.lotes import db as lotes_db
-from app.lotes import geometria
+from app.lotes import geometria, importar
 from app.nucleo.tipos import FechaOpcional, NumeroOpcional
 from app.nucleo.utilidades import normalizar_texto
 
@@ -236,3 +240,93 @@ def editar_cultivo_del_lote(fila_id: int, datos: LoteCultivoDatos):
 @router.delete("/lote-cultivos/{fila_id}", status_code=204)
 def eliminar_cultivo_del_lote(fila_id: int):
     lotes_db.eliminar_lote_cultivo(fila_id)
+
+
+# ---------- Importar desde otra app (KMZ, KML, GeoJSON) y exportar a KML ----------
+# La web lee el archivo y lo manda como texto "base64" (así no hace falta otra librería para
+# recibir archivos). Paso 1: /lotes/importar/leer devuelve la vista previa, sin guardar nada.
+# Paso 2: /lotes/importar guarda solo los que elegiste.
+
+MAXIMO_ARCHIVO = 15 * 1024 * 1024  # 15 MB
+
+
+class ArchivoParaLeer(BaseModel):
+    nombre_archivo: str = Field(max_length=200)
+    contenido_base64: str = Field(max_length=MAXIMO_ARCHIVO * 4 // 3 + 4)
+
+
+class LoteParaImportar(BaseModel):
+    nombre: str
+    geometria: dict[str, Any]
+    actualizar: bool = False  # Si ya existe un lote con ese nombre: True = cambiarle la forma.
+
+
+class PedidoImportar(BaseModel):
+    lotes: list[LoteParaImportar] = Field(max_length=1000)
+
+
+def _lote_con_mismo_nombre(nombre, lotes):
+    buscado = normalizar_texto(nombre)
+    return next((l for l in lotes if normalizar_texto(l["nombre"]) == buscado), None)
+
+
+@router.post("/lotes/importar/leer")
+def leer_archivo_de_lotes(archivo: ArchivoParaLeer):
+    try:
+        contenido = base64.b64decode(archivo.contenido_base64, validate=True)
+    except (binascii.Error, ValueError):
+        raise HTTPException(status_code=400, detail="No se pudo leer el archivo.")
+    try:
+        leidos, errores = importar.leer_archivo(archivo.nombre_archivo, contenido)
+    except importar.ArchivoInvalido as error:
+        raise HTTPException(status_code=400, detail=f"No se pudo importar: {error}.")
+    existentes = lotes_db.listar_lotes(incluir_archivados=True)
+    for lote in leidos:
+        igual = _lote_con_mismo_nombre(lote["nombre"], existentes)
+        lote["existente"] = {"id": igual["id"], "nombre": igual["nombre"], "archivado": igual["archivado"]} if igual else None
+    return {"lotes": leidos, "errores": errores}
+
+
+@router.post("/lotes/importar")
+def importar_lotes(pedido: PedidoImportar):
+    """Crea los lotes nuevos; los que ya existen se actualizan (si se pidió) o se saltean."""
+    creados, actualizados, salteados, errores = [], [], [], []
+    for item in pedido.lotes:
+        try:
+            datos = LoteDatos(nombre=item.nombre, geometria=item.geometria)  # Misma validación que a mano.
+        except ValidationError as error:
+            # Un lote malo no frena a los demás: se avisa cuál y por qué.
+            errores.append(f"«{item.nombre[:80]}»: {error.errors()[0]['msg'].replace('Value error, ', '')}")
+            continue
+        existente = _lote_con_mismo_nombre(datos.nombre, lotes_db.listar_lotes(incluir_archivados=True))
+        if existente is None:
+            creados.append(lotes_db.agregar_lote(_datos_lote(datos))["nombre"])
+        elif item.actualizar:
+            # Cambia solo la forma. Si las hectáreas estaban escritas a mano, se respetan.
+            calculadas = geometria.hectareas(existente["geometria"]) if existente["geometria"] else None
+            a_mano = existente["hectareas"] is not None and (
+                calculadas is None or abs(existente["hectareas"] - calculadas) > 0.005
+            )
+            nuevos = LoteDatos(
+                nombre=existente["nombre"], geometria=datos.geometria, observaciones=existente["observaciones"],
+                hectareas=existente["hectareas"] if a_mano else None,
+            )
+            actualizados.append(lotes_db.editar_lote(existente["id"], _datos_lote(nuevos))["nombre"])
+        else:
+            salteados.append(existente["nombre"])
+    return {"creados": creados, "actualizados": actualizados, "salteados": salteados, "errores": errores}
+
+
+@router.get("/exportar/lotes-kml")
+def exportar_lotes_kml(campania_id: Optional[int] = None):
+    """Los lotes en KML (Google Earth y otras apps), pintados con el cultivo de la campaña."""
+    lotes = ver_lotes(incluir_archivados=False, campania_id=campania_id)
+    titulo = "Lotes AgroApp"
+    if campania_id is not None:
+        campania = next((c for c in lotes_db.listar_campanias() if c["id"] == campania_id), None)
+        titulo += f" - campaña {campania['nombre']}" if campania else ""
+    return Response(
+        content=importar.armar_kml(lotes, titulo),
+        media_type="application/vnd.google-earth.kml+xml",
+        headers={"Content-Disposition": f'attachment; filename="lotes_{date.today():%Y-%m-%d}.kml"'},
+    )

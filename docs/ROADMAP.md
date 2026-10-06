@@ -65,6 +65,8 @@
 - [x] Campañas: cultivo por lote y por campaña, primera y segunda; el mapa pintado por cultivo, con leyenda
 - [x] Ficha del lote: cultivos por campaña, variedad, fechas, rinde (qq/ha), producción y trabajos de maquinaria
 - [x] Mapa de lotes en Inicio (campaña elegida, leyenda con hectáreas por cultivo)
+- [x] Importar lotes desde KMZ, KML o GeoJSON (vista previa, elegir cuáles, renombrar) y exportarlos a KML
+- [ ] Importar Shapefile (.shp en .zip: John Deere Operations Center, monitores)
 - [ ] Actividades por lote (aplicaciones con insumos del stock, labores) y avances de siembra/cosecha
 - [ ] Unir los trabajos de maquinaria al lote por id (hoy es por nombre escrito)
 

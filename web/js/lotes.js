@@ -213,6 +213,7 @@ async function cargar() {
     const filtro = campania ? `&campania_id=${campania.id}` : "";
     lotes = await api("GET", `/lotes?incluir_archivados=true${filtro}`);
     if (seleccionado && !lotes.some((l) => l.id === seleccionado)) seleccionado = null;
+    actualizarLinkKml();
     pintarMapa();
     encuadrar();
     mostrarLista();
@@ -427,6 +428,140 @@ async function desarchivar(lote) {
     avisar(error.message, "error");
   }
   cargar();
+}
+
+// ---------- Importar (KMZ, KML, GeoJSON) y exportar KML ----------
+// 1) Elegís el archivo → el servidor lo lee y devuelve una vista previa (no guarda nada).
+// 2) En la ventana elegís cuáles importar (y les podés cambiar el nombre) → se guardan.
+
+const archivoImportar = document.getElementById("archivo-importar");
+const ventanaImportar = document.getElementById("ventana-importar");
+const formImportar = document.getElementById("form-importar");
+const tablaImportar = document.getElementById("tabla-importar");
+const todosImportar = document.getElementById("importar-todos");
+const capaVistaPrevia = mapa ? L.featureGroup().addTo(mapa) : null;
+const ESTILO_VISTA_PREVIA = { color: "#38BDF8", weight: 3, dashArray: "6 4", fillColor: "#38BDF8", fillOpacity: 0.2 };
+let filasImportar = []; // [{lote (lo leído), casilla, nombre (input), estado (celda)}]
+
+document.getElementById("boton-importar").addEventListener("click", () => archivoImportar.click());
+
+// El archivo se manda como texto "base64" (letras y números que representan los bytes).
+function leerComoBase64(archivo) {
+  return new Promise((resolver, rechazar) => {
+    const lector = new FileReader();
+    lector.onload = () => resolver(String(lector.result).split(",", 2)[1] || "");
+    lector.onerror = () => rechazar(new Error("No se pudo leer el archivo."));
+    lector.readAsDataURL(archivo); // "data:...;base64,XXXX" → nos quedamos con XXXX
+  });
+}
+
+archivoImportar.addEventListener("change", async () => {
+  const archivo = archivoImportar.files[0];
+  archivoImportar.value = ""; // Así se puede volver a elegir el mismo archivo.
+  if (!archivo) return;
+  if (archivo.size > 15 * 1024 * 1024) {
+    avisar("El archivo es muy grande (máximo 15 MB).", "error");
+    return;
+  }
+  try {
+    const previa = await api("POST", "/lotes/importar/leer", {
+      nombre_archivo: archivo.name,
+      contenido_base64: await leerComoBase64(archivo),
+    });
+    mostrarVistaPrevia(archivo.name, previa);
+  } catch (error) {
+    avisar(error.message, "error");
+  }
+});
+
+// ¿Qué va a pasar con esta fila? Se recalcula si le cambiás el nombre o la tildás.
+function actualizarEstadoImportar(fila) {
+  const nombre = normalizar(fila.nombre.value.trim());
+  const existente = lotes.find((l) => normalizar(l.nombre) === nombre);
+  let texto = "Se crea";
+  let color = "verde";
+  if (!fila.casilla.checked) [texto, color] = ["No se importa", "gris"];
+  else if (!nombre) [texto, color] = ["Falta el nombre", "rojo"];
+  else if (existente) [texto, color] = [`Ya existe: se le cambia la forma${existente.archivado ? " (está archivado)" : ""}`, "ambar"];
+  fila.estado.replaceChildren(pill(texto, color));
+}
+
+function mostrarVistaPrevia(nombreArchivo, previa) {
+  filasImportar = [];
+  tablaImportar.replaceChildren();
+  capaVistaPrevia?.clearLayers();
+  for (const lote of previa.lotes) {
+    // Si ya hay uno con ese nombre, arranca SIN tildar: cambiar una forma tiene que ser a propósito.
+    const casilla = el("input", { type: "checkbox", checked: !lote.existente, "aria-label": `Importar ${lote.nombre}` });
+    const nombre = el("input", { value: lote.nombre, maxLength: 80, "aria-label": "Nombre del lote" });
+    const estado = el("td", {});
+    const fila = { lote, casilla, nombre, estado };
+    casilla.addEventListener("change", () => {
+      actualizarEstadoImportar(fila);
+      todosImportar.checked = filasImportar.every((f) => f.casilla.checked);
+    });
+    nombre.addEventListener("input", () => actualizarEstadoImportar(fila));
+    tablaImportar.append(el("tr", {}, el("td", {}, casilla), el("td", {}, nombre), el("td", { className: "numero" }, formatearCantidad(lote.hectareas)), estado));
+    actualizarEstadoImportar(fila);
+    filasImportar.push(fila);
+    if (capaVistaPrevia) {
+      L.geoJSON(lote.geometria, { style: ESTILO_VISTA_PREVIA })
+        .bindTooltip(el("span", {}, el("strong", {}, lote.nombre)), { className: "etiqueta-lote" })
+        .addTo(capaVistaPrevia);
+    }
+  }
+  if (previa.lotes.length === 0) tablaImportar.append(filaVacia(4, "El archivo no tiene lotes que se puedan usar."));
+  todosImportar.checked = filasImportar.length > 0 && filasImportar.every((f) => f.casilla.checked);
+
+  const total = previa.lotes.reduce((suma, l) => suma + l.hectareas, 0);
+  document.getElementById("importar-resumen").textContent =
+    `${nombreArchivo}: ${previa.lotes.length} lote(s), ${formatearCantidad(total)} ha. En el mapa se ven en celeste. ` +
+    "Tildá los que quieras traer; podés cambiarles el nombre.";
+  const errores = document.getElementById("importar-errores");
+  errores.hidden = previa.errores.length === 0;
+  errores.textContent = previa.errores.length ? `⚠️ No se pueden usar: ${previa.errores.join(" · ")}` : "";
+
+  if (capaVistaPrevia?.getLayers().length) mapa.fitBounds(capaVistaPrevia.getBounds(), { padding: [24, 24], maxZoom: 16 });
+  abrirVentana(ventanaImportar);
+}
+
+todosImportar.addEventListener("change", () => {
+  for (const fila of filasImportar) {
+    fila.casilla.checked = todosImportar.checked;
+    actualizarEstadoImportar(fila);
+  }
+});
+
+formImportar.addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  const elegidos = filasImportar.filter((f) => f.casilla.checked);
+  if (elegidos.length === 0) {
+    mostrarMensaje(document.getElementById("importar-mensaje"), "Tildá al menos un lote.", "error");
+    return;
+  }
+  const resultado = await enviarFormulario(formImportar, () =>
+    api("POST", "/lotes/importar", {
+      lotes: elegidos.map((f) => ({ nombre: f.nombre.value.trim(), geometria: f.lote.geometria, actualizar: true })),
+    }),
+  );
+  if (!resultado) return;
+  ventanaImportar.close();
+  const partes = [];
+  if (resultado.creados.length) partes.push(`${resultado.creados.length} creado(s)`);
+  if (resultado.actualizados.length) partes.push(`${resultado.actualizados.length} con forma nueva`);
+  if (resultado.errores.length) partes.push(`${resultado.errores.length} con error: ${resultado.errores.join(" · ")}`);
+  avisar(`✅ Importación lista: ${partes.join(", ") || "nada para importar"}.`, resultado.errores.length ? "error" : "ok");
+  yaEncuadrado = false; // Que el mapa muestre todos, incluidos los nuevos.
+  cargar();
+});
+
+// Al cerrar la ventana (importando o no), se borra la vista previa del mapa.
+ventanaImportar.addEventListener("close", () => capaVistaPrevia?.clearLayers());
+
+// Exportar: el link pide el KML de la campaña que estás mirando (colores de sus cultivos).
+const botonKml = document.getElementById("boton-kml");
+function actualizarLinkKml() {
+  botonKml.href = `/exportar/lotes-kml${campania ? `?campania_id=${campania.id}` : ""}`;
 }
 
 // ---------- Arranque ----------

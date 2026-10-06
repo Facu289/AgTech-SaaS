@@ -53,7 +53,7 @@ agroapp/
 │   ├── nucleo/    database (conexión, migraciones), backup, opciones, tipos, utilidades
 │   ├── insumos/ maquinaria/ ganaderia/   cada una: db.py (SQL) · rutas.py (API) · telegram.py (bot)
 │   ├── lotes/     db.py · rutas.py · geometria.py (validar el polígono y calcular hectáreas). También cultivos,
-│   │              campañas y cultivo por lote. Sin Telegram todavía
+│   │              campañas y cultivo por lote. importar.py: leer KMZ/KML/GeoJSON y armar KML. Sin Telegram todavía
 │   ├── usuarios/  login: db.py (hash y sesiones) · rutas.py (/login, /logout, /yo y el portero) · crear_usuario.py
 │   └── telegram/  comandos.py (reparte mensajes) · lenguaje_natural.py (Gemini) · notas.py
 ├── bot/bot.py   ← cartero Telegram ↔ backend
@@ -210,6 +210,14 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
   completo, dibujar), lote.html?id= (ficha: cultivos por campaña, rinde, producción en t y trabajos de
   maquinaria del lote, buscados por nombre), Cultivos (cultivos con color y campañas) y el mapa en Inicio.
 
+- Importar lotes de otra app: KMZ, KML (Google Earth y apps de campo) y GeoJSON. La web manda el archivo
+  como base64 dentro de un JSON (así no hace falta la librería python-multipart). Dos pasos: `POST
+  /lotes/importar/leer` = vista previa SIN guardar (marca los nombres que ya existen) y `POST /lotes/importar`
+  = guarda los elegidos (uno existente solo cambia su forma, y respeta sus ha a mano). Un Placemark con varios
+  polígonos da varios lotes ("Nombre (1)", "(2)"); los puntos se ignoran; una línea cerrada se toma como borde.
+  Exportar: `GET /exportar/lotes-kml?campania_id=` (KML pintado con el color del cultivo).
+  Shapefile (.shp) NO: necesita una librería y leer el sistema de coordenadas (.prj).
+
 ## Lecciones aprendidas (errores que ya nos pasaron)
 - No abrir `agroapp.db` en VS Code: se corrompe.
 - `.venv\.gitignore` contiene `*`: no moverlo a la raíz.
@@ -233,6 +241,9 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - MENOR: la página Lotes necesita internet (Leaflet y Geoman por CDN, fotos de Esri). Si un día molesta,
   se pueden copiar Leaflet y Geoman a web/ (las fotos siempre necesitan internet).
 - MENOR: los lotes no tienen comando de Telegram. (El Excel completo ya trae Lotes y Cultivos por lote).
+- MENOR: el XML de un KML se lee con xml.etree (la librería estándar). Python ya trae freno contra archivos
+  "bomba" de entidades, y el KMZ tiene límite de 50 MB descomprimido; si algún día se abre a desconocidos,
+  usar defusedxml.
 - MENOR: los trabajos de maquinaria se unen al lote por el NOMBRE escrito (texto libre), no por un id. Si se
   renombra un lote, sus trabajos viejos dejan de aparecer en la ficha.
 - MENOR: el bloqueo por intentos fallidos vive en memoria (se reinicia con el backend) y es por

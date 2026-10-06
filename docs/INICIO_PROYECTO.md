@@ -78,11 +78,14 @@ Respondé en español (Argentina).
   página Lotes con foto satelital, dibujar el lote, hectáreas automáticas o a mano, editar la forma,
   campañas y cultivo por lote (primera y segunda) pintando el mapa, ficha de cada lote (rinde, producción,
   trabajos de maquinaria), página Cultivos (colores y campañas) y el mapa en Inicio. Migraciones 9 y 10.
-  Sigue: actividades por lote.
+  Ya está en main y en el NAS (el NAS ahora sigue la rama main).
+- **Importar/exportar lotes** (rama `claude/lotes-kmz`, falta el OK para commit): traer lotes de KMZ, KML o
+  GeoJSON con vista previa, y bajarlos en KML para Google Earth u otra app.
+- **WhatsApp**: programado en la rama `claude/whatsapp` (carpeta `agroapp-whatsapp`), sin commit todavía.
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
 - **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 10** (lotes, cultivos y campañas), backup diario y
   antes de cada migración.
-- **Tests**: 156 pasan (`python -m pytest`) con lo del NAS y Lotes.
+- **Tests**: 170 pasan (`python -m pytest`) con lo del NAS, Lotes e importar KMZ.
 - **Preparado para el NAS** (rama `claude/project-thread-pfy3gt`, sale de `claude/login`):
   `Dockerfile`, `docker-compose.yml` (api + bot), `GET /salud` con healthcheck, backup diario
   aunque la app no se reinicie, rutas y zona horaria desde el `.env` y el script de mudanza

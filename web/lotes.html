@@ -20,6 +20,12 @@
         <p class="subtitulo" id="estado">Cargando…</p>
       </div>
       <div class="acciones">
+        <!-- Pasar lotes desde/hacia otra app (Google Earth, apps de campo...) -->
+        <input type="file" id="archivo-importar" accept=".kmz,.kml,.geojson,.json" hidden>
+        <button class="boton boton-secundario" type="button" id="boton-importar" data-icono="archivo"
+                title="Traer lotes de un archivo KMZ, KML o GeoJSON">Importar</button>
+        <a class="boton boton-secundario" id="boton-kml" data-icono="descarga"
+           title="Llevar tus lotes a Google Earth u otra app (KML)">KML</a>
         <button class="boton" type="button" id="boton-nuevo" data-icono="mas">Nuevo lote</button>
       </div>
     </div>
@@ -79,6 +85,32 @@
         <!-- type="button": así Enter guarda (y no cancela). -->
         <button class="boton boton-secundario" type="button" value="cancelar">Cancelar</button>
         <button class="boton" type="submit" data-icono="check">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Vista previa de lo que trae un archivo, antes de guardarlo -->
+  <dialog class="ventana ventana-ancha" id="ventana-importar" aria-labelledby="t-importar">
+    <form method="dialog" id="form-importar">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="archivo"></div>
+        <h2 id="t-importar">Importar lotes</h2>
+      </div>
+      <p class="ayuda" id="importar-resumen"></p>
+      <p class="ayuda" id="importar-errores" style="color: var(--rojo)" hidden></p>
+      <div class="contenedor-tabla tabla-importar">
+        <table>
+          <thead>
+            <tr><th><input type="checkbox" id="importar-todos" aria-label="Elegir todos" checked></th>
+              <th>Nombre</th><th class="numero">Hectáreas</th><th>Qué va a pasar</th></tr>
+          </thead>
+          <tbody id="tabla-importar"></tbody>
+        </table>
+      </div>
+      <p class="mensaje" id="importar-mensaje" hidden></p>
+      <div class="ventana-pie">
+        <button class="boton boton-secundario" type="button" value="cancelar">Cancelar</button>
+        <button class="boton" type="submit" data-icono="check">Importar</button>
       </div>
     </form>
   </dialog>
