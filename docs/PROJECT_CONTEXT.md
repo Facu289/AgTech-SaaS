@@ -67,6 +67,7 @@ Cada carpeta de `app/` tiene un `__init__.py` (así Python la trata como "paquet
 ## Arquitectura
 ```
 Telegram ─► bot/bot.py ─POST /mensaje─► app/main.py ─► app/telegram/comandos.py ─► <área>/telegram.py
+WhatsApp ─► Meta ─POST /whatsapp (webhook)─► app/whatsapp/rutas.py ─► app/telegram/comandos.py (el mismo)
 Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
                                    ambos ─► <área>/db.py ─► app/nucleo/database.py ─► datos/agroapp.db
 ```
@@ -76,6 +77,16 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
   responde 401 (la web, en `comun.js`, manda al login). Libres solo: `/login`, `/logout`,
   `login.html`, `login.js` y `estilos.css` (rutas EXACTAS, para que "../" no cuele nada).
   El bot manda `Authorization: Bearer <AGROAPP_BOT_TOKEN>` y con eso solo puede usar `POST /mensaje`.
+- **WhatsApp** (`app/whatsapp/rutas.py`): Meta AVISA cada mensaje con un POST (webhook), así que el
+  cartero vive dentro del backend (no hay un programa aparte como bot/bot.py). `/whatsapp` está en
+  `RUTAS_LIBRES`: su seguridad es la firma `X-Hub-Signature-256` (HMAC-SHA256 del cuerpo crudo con
+  `WHATSAPP_APP_SECRET`); sin firma válida, 403. `GET /whatsapp` es la verificación inicial de Meta
+  (`WHATSAPP_VERIFY_TOKEN`). Responde 200 enseguida y atiende el mensaje de fondo (BackgroundTasks):
+  número autorizado (`WHATSAPP_USUARIOS_AUTORIZADOS`) → `generar_respuesta` (lo pendiente de "sí" se
+  guarda como `"whatsapp:<número>"`) → respuesta por la Graph API (`WHATSAPP_GRAPH_VERSION`, v26.0).
+  Números argentinos: se comparan normalizados (549… / +54 9 … / 351… → 54XXXXXXXXXX); si Meta rechaza
+  el número con 9 (error 131030), reintenta sin el 9. Ignora estados; a lo que no es texto contesta amable.
+  Mensajes repetidos por Meta (mismo id) se atienden una vez.
 - Los `db.py` no saben nada de HTTP: lanzan excepciones (`NoEncontrado`, `TieneHistorial`,
   `Archivado`, `StockInsuficiente`, `EventoInvalido`) y `app/main.py` las traduce a HTTP en UN lugar.
 - Los `telegram.py` reutilizan las reglas de su `rutas.py` (ej: nombres repetidos, stock bajo).
@@ -290,6 +301,12 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
   type="button" al Cancelar o mover Guardar primero.
 - MENOR: los grupos no tienen historial de altas/bajas de cabezas: la cantidad se edita a mano.
 - MENOR: lo pendiente de confirmar por Telegram vive en memoria (se pierde si se reinicia el backend).
+- IMPORTANTE: el Cloudflare Tunnel publica toda la app, no solo `/whatsapp` (la protege el login).
+  Restringirlo a `/whatsapp` o sumar Cloudflare Access + `AGROAPP_COOKIE_SEGURA=1`.
+- FUTURA: WhatsApp no puede escribir primero (ej. alertas a la mañana) si pasaron 24 h sin mensajes
+  del usuario: hace falta una plantilla aprobada por Meta. Hoy el bot solo contesta.
+- MENOR: la carpeta `app/telegram/` ahora la usa también WhatsApp: renombrarla (ej. `app/bot/`) cuando
+  se apague Telegram.
 - A TENER EN CUENTA: los mensajes en lenguaje natural (y los nombres de insumos/máquinas/caravanas)
   se envían a Google (Gemini). Los comandos con "/" no salen de la PC.
 
@@ -305,5 +322,7 @@ de mudanza. Falta probar Docker en el NAS.
 Lotes en mapa (rama `claude/lotes`, migraciones 9 y 10): página Lotes con satélite, dibujar/editar/borrar
 polígonos, hectáreas automáticas o a mano, cultivos con color, campañas, cultivo por lote (primera y segunda),
 ficha del lote y mapa en Inicio.
-**Siguiente**: NAS listo (otro chat) → instalar y mudar con `docs/NAS_INSTALAR.md` → WhatsApp.
+Bot de WhatsApp hecho (webhook `/whatsapp`, mismos comandos que Telegram): falta ponerlo en marcha en el NAS.
+**Siguiente**: WhatsApp en el NAS (variables, webhook en Meta) → migrar de Telegram a WhatsApp →
+cerrar el túnel a solo `/whatsapp`.
 El detalle está en `docs/INICIO_PROYECTO.md`.
