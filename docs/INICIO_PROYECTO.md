@@ -81,11 +81,14 @@ Respondé en español (Argentina).
   Ya está en main y en el NAS (el NAS ahora sigue la rama main).
 - **Importar/exportar lotes** (rama `claude/lotes-kmz`, falta el OK para commit): traer lotes de KMZ, KML o
   GeoJSON con vista previa, y bajarlos en KML para Google Earth u otra app.
+- **Órdenes de trabajo + campo en los lotes** (rama `claude/ordenes`, sale de main; falta el OK para commit):
+  órdenes como la planilla de pulverización, advertencia de stock, descuento al realizar, registro por lote
+  ("1 al 12" se desarma), impresión. Lotes con campo. Migraciones 11 y 12.
 - **WhatsApp**: programado en la rama `claude/whatsapp` (carpeta `agroapp-whatsapp`), sin commit todavía.
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
-- **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 10** (lotes, cultivos y campañas), backup diario y
+- **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 12** (lotes, cultivos, campañas, órdenes y campo), backup diario y
   antes de cada migración.
-- **Tests**: 170 pasan (`python -m pytest`) con lo del NAS, Lotes e importar KMZ.
+- **Tests**: 189 pasan (`python -m pytest`) con lo del NAS, Lotes, importar KMZ, órdenes y campo.
 - **Preparado para el NAS** (rama `claude/project-thread-pfy3gt`, sale de `claude/login`):
   `Dockerfile`, `docker-compose.yml` (api + bot), `GET /salud` con healthcheck, backup diario
   aunque la app no se reinicie, rutas y zona horaria desde el `.env` y el script de mudanza

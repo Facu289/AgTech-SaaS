@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 from app.ganaderia import db as ganaderia_db
 from app.insumos import db as insumos_db
 from app.lotes import db as lotes_db
+from app.ordenes import db as ordenes_db
 from app.maquinaria import db as maquinaria_db
 from app.nucleo import opciones
 
@@ -140,6 +141,7 @@ def hojas_completas() -> list:
         eventos += ganaderia_db.listar_eventos(a["id"])
 
     C, E = opciones.CATEGORIAS, opciones.ESTADOS_REPRODUCTIVOS
+    ordenes = ordenes_db.listar_ordenes()
 
     def hoja_insumos(hoja):
         """Insumos, Químicos y Repuestos van en hojas separadas (como en la web)."""
@@ -187,14 +189,26 @@ def hojas_completas() -> list:
          [[e["fecha"], caravana.get(e["animal_id"]), especie.get(e["animal_id"]), _etiqueta(opciones.TIPOS_EVENTO, e["tipo"]),
            _etiqueta(E, e["resultado"]) if e["resultado"] else "", e["crias_machos"] or None,
            e["crias_hembras"] or None, e["detalle"]] for e in sorted(eventos, key=lambda x: x["fecha"], reverse=True)]),
-        ("Lotes", ["Lote", "Hectáreas", "Archivado", "Observaciones"],
-         [[l["nombre"], l["hectareas"], "Sí" if l["archivado"] else "No", l["observaciones"]]
+        ("Lotes", ["Campo", "Lote", "Hectáreas", "Archivado", "Observaciones"],
+         [[l["campo"], l["nombre"], l["hectareas"], "Sí" if l["archivado"] else "No", l["observaciones"]]
           for l in lotes_db.listar_lotes(incluir_archivados=True)]),
-        ("Cultivos por lote", ["Campaña", "Lote", "Ciclo", "Cultivo", "Variedad / híbrido", "Siembra", "Cosecha",
+        ("Cultivos por lote", ["Campaña", "Campo", "Lote", "Ciclo", "Cultivo", "Variedad / híbrido", "Siembra", "Cosecha",
                                "Hectáreas", "Rinde (qq/ha)", "Observaciones"],
-         [[c["campania"], c["lote"], c["ciclo"].capitalize(), c["cultivo"], c["variedad"], c["fecha_siembra"],
+         [[c["campania"], c["campo"], c["lote"], c["ciclo"].capitalize(), c["cultivo"], c["variedad"], c["fecha_siembra"],
            c["fecha_cosecha"], c["hectareas"] or c["hectareas_lote"], c["rinde"], c["observaciones"]]
           for c in lotes_db.listar_lote_cultivos()]),
+        ("Órdenes de trabajo", ["N°", "Emisión", "Realizada", "Estado", "Campaña", "Campo", "Tarea", "Lotes",
+                                "Hectáreas", "Máquina", "Operarios", "Caldo (l/ha)", "Tancadas", "Estado del lote",
+                                "Cultivo", "Descripción"],
+         [[o["numero"], o["fecha_emision"], o["fecha_realizacion"], _etiqueta(opciones.ESTADOS_ORDEN, o["estado"]),
+           o["campania"] or "", o["campo"], _etiqueta(opciones.TAREAS_ORDEN, o["tarea"]),
+           ", ".join(f"{l['lote']} ({l['hectareas']:g} ha)" for l in o["lotes"]), o["hectareas"], o["maquina"],
+           o["operarios"], o["caldo_ha"], o["tancadas"], o["estado_lote"], o["cultivo"], o["descripcion"]]
+          for o in ordenes]),
+        ("Productos de órdenes", ["N° orden", "Emisión", "Estado", "Producto", "Dosis/ha", "Total", "Unidad"],
+         [[o["numero"], o["fecha_emision"], _etiqueta(opciones.ESTADOS_ORDEN, o["estado"]), p["insumo"],
+           round(p["cantidad_total"] / o["hectareas"], 3) if o["hectareas"] else None, p["cantidad_total"], p["unidad"]]
+          for o in ordenes for p in o["productos"]]),
     ]
 
 

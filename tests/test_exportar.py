@@ -37,7 +37,8 @@ def test_exportar_todo(cliente, bot):
     libro = abrir(cliente.get("/exportar/completo"))
     assert libro.sheetnames == ["Insumos", "Químicos", "Repuestos", "Movimientos", "Máquinas", "Services y arreglos",
                                 "Service programado", "Trabajos", "Vencimientos", "Contactos", "Animales",
-                                "Eventos de animales", "Lotes", "Cultivos por lote"]
+                                "Eventos de animales", "Lotes", "Cultivos por lote",
+                                "Órdenes de trabajo", "Productos de órdenes"]
     # Cada insumo en su hoja, igual que en la web.
     assert [c.value for c in libro["Químicos"][2]][:4] == ["glifosato", "Agroquímico", "Herbicida", 20]
     assert [fila[0].value for fila in libro["Insumos"].iter_rows(min_row=2)] == ["urea"]

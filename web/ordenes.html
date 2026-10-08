@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Órdenes de trabajo · AgroApp</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="ordenes">
+  <main>
+    <div class="seccion-encabezado">
+      <div>
+        <h1>Órdenes de trabajo</h1>
+        <p class="subtitulo" id="estado">Cargando…</p>
+      </div>
+      <div class="acciones">
+        <a class="boton" href="orden.html" id="boton-nueva" data-icono="mas">Nueva orden</a>
+      </div>
+    </div>
+    <p class="ayuda">La orden se carga ANTES de aplicar (no toca el stock). Al marcarla <strong>realizada</strong>,
+      sus productos salen del stock y quedan en Movimientos.</p>
+
+    <form class="filtros" id="filtros" role="search">
+      <label class="buscador" data-icono-lupa>
+        <input name="texto" type="search" placeholder="Buscar N°, campo, lote, producto…" aria-label="Buscar" autocomplete="off">
+      </label>
+      <select name="estado" aria-label="Estado" data-estados></select>
+      <select name="campania" aria-label="Campaña" data-campanias></select>
+      <button class="boton-limpiar" type="reset">Limpiar</button>
+    </form>
+
+    <div class="contenedor-tabla">
+      <table>
+        <thead>
+          <tr><th>N°</th><th>Emisión</th><th>Campo</th><th>Tarea</th><th>Lotes</th><th class="numero">Hectáreas</th>
+            <th>Productos</th><th>Estado</th><th><span hidden>Acciones</span></th></tr>
+        </thead>
+        <tbody id="cuerpo-tabla"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="js/comun.js"></script>
+  <script src="js/comun-lotes.js"></script>
+  <script src="js/ordenes.js"></script>
+</body>
+</html>

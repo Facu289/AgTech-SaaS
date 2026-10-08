@@ -40,8 +40,9 @@ def leer_numero(texto: str):
     if "," in texto:
         # Formato argentino: el punto separa miles y la coma los decimales.
         texto = texto.replace(".", "").replace(",", ".")
-    elif re.fullmatch(r"\d{1,3}(\.\d{3})+", texto):
+    elif re.fullmatch(r"[1-9]\d{0,2}(\.\d{3})+", texto):
         # "1.500" o "12.000": los puntos son separadores de miles.
+        # (Si empieza con 0, como "0.375", el punto es decimal: es una dosis, no 375).
         texto = texto.replace(".", "")
     try:
         cantidad = float(texto)

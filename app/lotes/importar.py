@@ -40,14 +40,15 @@ def leer_archivo(nombre_archivo: str, contenido: bytes):
         raise ArchivoInvalido("formato no reconocido: usá un archivo .kmz, .kml o .geojson")
 
     lotes, errores = [], []
-    for numero, (nombre, poligono) in enumerate(crudos, start=1):
+    for numero, (nombre, poligono, campo) in enumerate(crudos, start=1):
         nombre = (nombre or "").strip()[:80] or f"Lote {numero}"
+        campo = (campo or "").strip()[:80]
         try:
             limpio = geometria.validar_poligono(poligono)
         except ValueError as error:
             errores.append(f"«{nombre}»: {error}")
             continue
-        lotes.append({"nombre": nombre, "geometria": limpio, "hectareas": geometria.hectareas(limpio)})
+        lotes.append({"campo": campo, "nombre": nombre, "geometria": limpio, "hectareas": geometria.hectareas(limpio)})
 
     if not lotes and not errores:
         raise ArchivoInvalido("el archivo no tiene polígonos (¿son puntos o líneas?)")
@@ -56,14 +57,14 @@ def leer_archivo(nombre_archivo: str, contenido: bytes):
 
 
 def _nombres_sin_repetir(lotes):
-    """Si el archivo trae dos "Lote 4", el segundo pasa a "Lote 4 (2)" (o el primer número libre)."""
+    """Si el archivo trae dos "Lote 4" en el mismo campo, el segundo pasa a "Lote 4 (2)" (o el primer número libre)."""
     usados = set()
     for lote in lotes:
         base, numero = lote["nombre"], 2
-        while lote["nombre"].lower() in usados:
+        while (lote["campo"].lower(), lote["nombre"].lower()) in usados:
             lote["nombre"] = f"{base} ({numero})"
             numero += 1
-        usados.add(lote["nombre"].lower())
+        usados.add((lote["campo"].lower(), lote["nombre"].lower()))
 
 
 def _kml_dentro_del_kmz(contenido: bytes) -> bytes:
@@ -104,15 +105,30 @@ def _coordenadas(texto: str):
     return puntos
 
 
+def _carpeta_de(placemark, padres):
+    """El nombre de la carpeta (Folder) donde está el lote: muchas apps agrupan los lotes por campo así."""
+    elemento = padres.get(placemark)
+    while elemento is not None:
+        if _sin_namespace(elemento.tag) == "Folder":
+            return next((h.text for h in elemento if _sin_namespace(h.tag) == "name" and h.text), "")
+        elemento = padres.get(elemento)
+    return ""
+
+
 def _leer_kml(contenido: bytes):
-    """Devuelve [(nombre, poligono_geojson)]. Un Placemark con varios polígonos da varios lotes."""
+    """Devuelve [(nombre, poligono_geojson, campo)]. Un Placemark con varios polígonos da varios lotes.
+
+    El campo propuesto es el nombre de la carpeta (Folder) que lo contiene (en la vista previa se cambia).
+    """
     try:
         raiz = ET.fromstring(contenido)
     except ET.ParseError as error:
         raise ArchivoInvalido(f"el KML está mal armado ({error})")
 
+    padres = {hijo: padre for padre in raiz.iter() for hijo in padre}  # ElementTree no sabe "quién es mi padre".
     resultado = []
     for placemark in _hijos(raiz, "Placemark"):
+        campo = _carpeta_de(placemark, padres)
         nombre = next((h.text for h in placemark if _sin_namespace(h.tag) == "name" and h.text), "")
         formas = []
         for poligono in _hijos(placemark, "Polygon"):
@@ -129,19 +145,20 @@ def _leer_kml(contenido: bytes):
                 if len(puntos) >= 4 and puntos[0] == puntos[-1]:
                     formas.append({"type": "Polygon", "coordinates": [puntos]})
         for numero, forma in enumerate(formas, start=1):
-            resultado.append((f"{nombre} ({numero})" if len(formas) > 1 else nombre, forma))
+            resultado.append((f"{nombre} ({numero})" if len(formas) > 1 else nombre, forma, campo))
     return resultado
 
 
-CLAVES_NOMBRE = ("nombre", "name", "lote", "field", "field_name", "campo", "potrero", "id")
+CLAVES_NOMBRE = ("nombre", "name", "lote", "field", "field_name", "potrero", "id")
+CLAVES_CAMPO = ("campo", "establecimiento", "farm", "farm_name", "estancia")
 
 
-def _nombre_de_propiedades(propiedades):
-    """Busca el nombre del lote entre las propiedades (cada app lo llama distinto)."""
+def _de_propiedades(propiedades, claves):
+    """Busca un dato entre las propiedades (cada app le pone otro nombre a la columna)."""
     if not isinstance(propiedades, dict):
         return ""
     por_clave = {str(k).lower(): v for k, v in propiedades.items()}
-    for clave in CLAVES_NOMBRE:
+    for clave in claves:
         valor = por_clave.get(clave)
         if valor not in (None, ""):
             return str(valor)
@@ -166,16 +183,18 @@ def _leer_geojson(contenido: bytes):
         if not isinstance(elemento, dict):
             continue
         if elemento.get("type") == "Feature":
-            forma, nombre = elemento.get("geometry") or {}, _nombre_de_propiedades(elemento.get("properties"))
+            propiedades = elemento.get("properties")
+            forma = elemento.get("geometry") or {}
+            nombre, campo = _de_propiedades(propiedades, CLAVES_NOMBRE), _de_propiedades(propiedades, CLAVES_CAMPO)
         else:
-            forma, nombre = elemento, ""
+            forma, nombre, campo = elemento, "", ""
         if forma.get("type") == "Polygon":
-            resultado.append((nombre, forma))
+            resultado.append((nombre, forma, campo))
         elif forma.get("type") == "MultiPolygon":
             partes = forma.get("coordinates") or []
             for numero, anillos in enumerate(partes, start=1):
                 parte = {"type": "Polygon", "coordinates": anillos}
-                resultado.append((f"{nombre} ({numero})" if len(partes) > 1 and nombre else nombre, parte))
+                resultado.append((f"{nombre} ({numero})" if len(partes) > 1 and nombre else nombre, parte, campo))
     return resultado
 
 
@@ -198,12 +217,17 @@ def armar_kml(lotes, titulo="Lotes AgroApp") -> bytes:
     documento = ET.SubElement(kml, f"{ns}Document")
     ET.SubElement(documento, f"{ns}name").text = titulo
 
+    carpetas = {}
     for lote in lotes:
         if not lote.get("geometria"):
             continue
+        campo = lote.get("campo") or ""
+        if campo and campo not in carpetas:
+            carpetas[campo] = ET.SubElement(documento, f"{ns}Folder")
+            ET.SubElement(carpetas[campo], f"{ns}name").text = campo
         cultivos = lote.get("cultivos") or []
         color = cultivos[0]["color"] if cultivos else "#FACC15"
-        marca = ET.SubElement(documento, f"{ns}Placemark")
+        marca = ET.SubElement(carpetas.get(campo, documento), f"{ns}Placemark")
         ET.SubElement(marca, f"{ns}name").text = lote["nombre"]
         detalle = [f"{lote['hectareas']:.2f} ha".replace(".", ",")] if lote.get("hectareas") is not None else []
         detalle += [("2ª " if c["ciclo"] == "segunda" else "") + c["cultivo"] for c in cultivos]

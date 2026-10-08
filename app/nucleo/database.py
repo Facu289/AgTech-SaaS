@@ -398,6 +398,82 @@ MIGRACIONES = [
         "CREATE INDEX idx_lote_cultivos_campania ON lote_cultivos(campania_id)",
         "CREATE INDEX idx_lote_cultivos_cultivo ON lote_cultivos(cultivo_id)",
     ],
+    # 11) Órdenes de trabajo (ej: pulverización), como la planilla que se usa en el campo.
+    #    - Casi todo el encabezado es texto libre (campo, máquina, operarios, lotes): así se
+    #      carga igual que en papel, aunque el lote o la máquina no estén en la app.
+    #    - De cada producto se guarda el TOTAL (lo que sale del stock). La dosis por hectárea
+    #      se calcula: total / hectáreas de la orden. Así nunca quedan dos números que no coinciden.
+    #    - movimientos.orden_id: qué orden generó cada salida (o devolución) de stock.
+    [
+        """
+        CREATE TABLE ordenes_trabajo (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            numero            TEXT    NOT NULL DEFAULT '',
+            campania_id       INTEGER REFERENCES campanias(id),
+            campo             TEXT    NOT NULL DEFAULT '',
+            tarea             TEXT    NOT NULL,
+            maquina           TEXT    NOT NULL DEFAULT '',
+            operarios         TEXT    NOT NULL DEFAULT '',
+            fecha_emision     TEXT    NOT NULL,
+            fecha_realizacion TEXT,
+            estado_lote       TEXT    NOT NULL DEFAULT '',
+            cultivo           TEXT    NOT NULL DEFAULT '',
+            caldo_ha          REAL    CHECK (caldo_ha IS NULL OR caldo_ha >= 0),
+            tancadas          INTEGER CHECK (tancadas IS NULL OR tancadas > 0),
+            descripcion       TEXT    NOT NULL DEFAULT '',
+            estado            TEXT    NOT NULL DEFAULT 'pendiente'
+                              CHECK (estado IN ('pendiente', 'realizada', 'anulada')),
+            creado_en         TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+            actualizado_en    TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+        )
+        """,
+        """
+        CREATE TABLE orden_lotes (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            orden_id  INTEGER NOT NULL REFERENCES ordenes_trabajo(id),
+            lote      TEXT    NOT NULL,
+            hectareas REAL    NOT NULL CHECK (hectareas > 0)
+        )
+        """,
+        """
+        CREATE TABLE orden_productos (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            orden_id       INTEGER NOT NULL REFERENCES ordenes_trabajo(id),
+            insumo_id      INTEGER NOT NULL REFERENCES insumos(id),
+            cantidad_total REAL    NOT NULL CHECK (cantidad_total > 0)
+        )
+        """,
+        "CREATE INDEX idx_orden_lotes_orden ON orden_lotes(orden_id)",
+        "CREATE INDEX idx_orden_productos_orden ON orden_productos(orden_id)",
+        "ALTER TABLE movimientos ADD COLUMN orden_id INTEGER REFERENCES ordenes_trabajo(id)",
+    ],
+    # 12) Campo (establecimiento) de cada lote: "LM", "SR Oeste"...
+    #    Los lotes se numeran por campo (1, 2, 3... en cada uno), así que el nombre deja de ser
+    #    único en toda la app: ahora es único por campo + nombre. Para sacar el UNIQUE de la
+    #    columna nombre hay que RECONSTRUIR la tabla (como en la migración 7 con animales).
+    #    Los lotes que ya había quedan con campo vacío (se completa a mano o al importar).
+    [
+        """
+        CREATE TABLE lotes_nueva (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            campo          TEXT    NOT NULL DEFAULT '',
+            nombre         TEXT    NOT NULL COLLATE NOCASE,
+            geometria      TEXT,
+            hectareas      REAL    CHECK (hectareas IS NULL OR hectareas >= 0),
+            observaciones  TEXT    NOT NULL DEFAULT '',
+            archivado      INTEGER NOT NULL DEFAULT 0 CHECK (archivado IN (0, 1)),
+            creado_en      TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+            actualizado_en TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+        )
+        """,
+        """
+        INSERT INTO lotes_nueva (id, nombre, geometria, hectareas, observaciones, archivado, creado_en, actualizado_en)
+        SELECT id, nombre, geometria, hectareas, observaciones, archivado, creado_en, actualizado_en FROM lotes
+        """,
+        "DROP TABLE lotes",
+        "ALTER TABLE lotes_nueva RENAME TO lotes",
+        "CREATE UNIQUE INDEX idx_lotes_campo_nombre ON lotes(campo COLLATE NOCASE, nombre COLLATE NOCASE)",
+    ],
 ]
 
 

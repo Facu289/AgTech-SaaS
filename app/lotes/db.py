@@ -12,7 +12,7 @@ class LoteNoEncontrado(NoEncontrado):
     """Se pidió un lote que no existe."""
 
 
-CAMPOS_LOTE = ("nombre", "geometria", "hectareas", "observaciones")
+CAMPOS_LOTE = ("campo", "nombre", "geometria", "hectareas", "observaciones")
 
 
 def _a_dict(fila):
@@ -37,7 +37,9 @@ def _obtener(conexion, lote_id):
 def listar_lotes(incluir_archivados=False):
     condicion = "" if incluir_archivados else " WHERE archivado = 0"
     with conectar() as conexion:
-        filas = conexion.execute(f"SELECT * FROM lotes{condicion} ORDER BY nombre COLLATE NOCASE").fetchall()
+        filas = conexion.execute(
+            f"SELECT * FROM lotes{condicion} ORDER BY campo COLLATE NOCASE, nombre COLLATE NOCASE"
+        ).fetchall()
         return [_a_dict(fila) for fila in filas]
 
 
@@ -49,7 +51,8 @@ def obtener_lote(lote_id):
 def agregar_lote(datos: dict):
     with conectar() as conexion:
         cursor = conexion.execute(
-            f"INSERT INTO lotes ({', '.join(CAMPOS_LOTE)}) VALUES (?, ?, ?, ?)", _valores(datos)
+            f"INSERT INTO lotes ({', '.join(CAMPOS_LOTE)}) VALUES ({', '.join('?' for _ in CAMPOS_LOTE)})",
+            _valores(datos),
         )
         return _obtener(conexion, cursor.lastrowid)
 
@@ -164,7 +167,7 @@ def eliminar_campania(campania_id):
 # ---------- Cultivo de cada lote en cada campaña ----------
 
 SELECT_LOTE_CULTIVOS = """
-    SELECT lc.*, c.nombre AS cultivo, c.color, ca.nombre AS campania, l.nombre AS lote,
+    SELECT lc.*, c.nombre AS cultivo, c.color, ca.nombre AS campania, l.nombre AS lote, l.campo,
            l.hectareas AS hectareas_lote
     FROM lote_cultivos lc
     JOIN cultivos c ON c.id = lc.cultivo_id

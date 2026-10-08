@@ -208,6 +208,23 @@ def hoja_de(categoria: str) -> str:
     return "insumos"
 
 
+# Tareas de una orden de trabajo. El título de la orden impresa sale de acá.
+TAREAS_ORDEN = {
+    "pulverizacion_terrestre": "Pulverización terrestre",
+    "pulverizacion_dron": "Pulverización con dron",
+    "pulverizacion_aerea": "Pulverización aérea",
+    "fertilizacion": "Fertilización",
+    "siembra": "Siembra",
+    "otra": "Otra",
+}
+
+ESTADOS_ORDEN = {
+    "pendiente": "Pendiente",
+    "realizada": "Realizada",
+    "anulada": "Anulada",
+}
+
+
 def todas():
     """Todo junto, para GET /opciones (lo usa la web)."""
     return {
@@ -229,4 +246,6 @@ def todas():
         "estados_animal": ESTADOS_ANIMAL,
         "tipos_evento": TIPOS_EVENTO,
         "dias_alerta": DIAS_ALERTA,
+        "tareas_orden": TAREAS_ORDEN,
+        "estados_orden": ESTADOS_ORDEN,
     }

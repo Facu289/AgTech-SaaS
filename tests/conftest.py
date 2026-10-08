@@ -15,8 +15,8 @@ sys.path.insert(0, str(CARPETA_PROYECTO))
 # En orden: primero lo que no depende de nada, al final main.
 MODULOS = [
     "app.nucleo.database", "app.nucleo.backup",
-    "app.insumos.db", "app.maquinaria.db", "app.ganaderia.db", "app.lotes.db",
-    "app.insumos.rutas", "app.maquinaria.rutas", "app.ganaderia.rutas", "app.lotes.rutas",
+    "app.insumos.db", "app.maquinaria.db", "app.ganaderia.db", "app.lotes.db", "app.ordenes.db",
+    "app.insumos.rutas", "app.maquinaria.rutas", "app.ganaderia.rutas", "app.lotes.rutas", "app.ordenes.rutas",
     "app.alertas", "app.exportar",
     "app.telegram.notas", "app.insumos.telegram", "app.maquinaria.telegram", "app.ganaderia.telegram",
     "app.telegram.lenguaje_natural", "app.telegram.comandos",

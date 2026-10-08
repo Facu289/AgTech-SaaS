@@ -23,7 +23,7 @@ function dato(nombre, valor) {
 }
 
 function mostrarDatos() {
-  titulo.textContent = lote.nombre + (lote.archivado ? " (archivado)" : "");
+  titulo.textContent = (lote.campo ? `${lote.campo} · ` : "") + lote.nombre + (lote.archivado ? " (archivado)" : "");
   document.title = `${lote.nombre} · AgroApp`;
   const actual = lote.historial.find((h) => h.campania_id === lote.historial[0]?.campania_id && h.ciclo === "primera") || lote.historial[0];
   subtitulo.textContent = [
@@ -31,6 +31,7 @@ function mostrarDatos() {
     actual ? `${actual.campania}: ${lote.historial.filter((h) => h.campania_id === actual.campania_id).map(nombreCultivo).join(" → ")}` : "Sin cultivos cargados",
   ].join(" · ");
   document.getElementById("datos").replaceChildren(
+    ...dato("Campo", lote.campo),
     ...dato("Hectáreas", lote.hectareas !== null ? `${formatearCantidad(lote.hectareas)} ha` : ""),
     ...dato("Según el dibujo", lote.hectareas_calculadas !== null ? `${formatearCantidad(lote.hectareas_calculadas)} ha` : "Sin dibujar"),
     ...dato("Campañas cargadas", new Set(lote.historial.map((h) => h.campania_id)).size),
@@ -88,6 +89,36 @@ function mostrarCultivos() {
   }
 }
 
+async function mostrarAplicaciones() {
+  const cuerpo = document.getElementById("tabla-aplicaciones");
+  const aplicaciones = await api("GET", `/lotes/${loteId}/aplicaciones`);
+  cuerpo.replaceChildren();
+  if (aplicaciones.length === 0) cuerpo.append(filaVacia(7, "Todavía no hay órdenes de trabajo para este lote."));
+  for (const a of aplicaciones) {
+    const estado = a.estado === "realizada" ? pill("Realizada", "verde") : pill("Pendiente", "ambar");
+    a.productos.forEach((p, i) => {
+      // La fecha, la orden, la tarea y el estado van solo en la primera fila de cada orden.
+      const primera = i === 0;
+      cuerpo.append(
+        el(
+          "tr",
+          {},
+          el("td", {}, primera ? formatearFecha(a.fecha) : ""),
+          el("td", { style: "white-space:nowrap" }, primera ? el("a", { href: `orden.html?id=${a.orden_id}` }, a.numero ? `OT ${a.numero}` : `Orden #${a.orden_id}`) : ""),
+          el("td", {}, primera ? opciones.tareas_orden[a.tarea] || a.tarea : ""),
+          el("td", {}, primera ? estado : ""),
+          el("td", {}, p.insumo),
+          el("td", { className: "numero" }, p.dosis_ha !== null ? `${p.dosis_ha.toLocaleString("es-AR", { maximumFractionDigits: 3 })} ${p.unidad}/ha` : "—"),
+          el("td", { className: "numero fuerte" }, p.cantidad !== null ? `${formatearCantidad(p.cantidad)} ${p.unidad}` : "—"),
+        ),
+      );
+    });
+    if (a.productos.length === 0) {
+      cuerpo.append(el("tr", {}, el("td", {}, formatearFecha(a.fecha)), el("td", {}, `OT ${a.numero}`), el("td", {}, opciones.tareas_orden[a.tarea] || a.tarea), el("td", {}, estado), el("td", { colSpan: 3, className: "suave" }, "Sin productos")));
+    }
+  }
+}
+
 async function mostrarTrabajos() {
   const cuerpo = document.getElementById("tabla-trabajos");
   const buscado = normalizar(lote.nombre);
@@ -120,6 +151,7 @@ async function cargar() {
     mostrarDatos();
     mostrarMapa();
     mostrarCultivos();
+    await mostrarAplicaciones();
     await mostrarTrabajos();
   } catch (error) {
     titulo.textContent = error.estado === 404 ? "No existe ese lote" : `⚠️ ${error.message}`;

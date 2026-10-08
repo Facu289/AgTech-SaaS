@@ -1340,6 +1340,18 @@ dialog.ventana form {
   white-space: nowrap;
 }
 
+/* Título de cada campo en la lista de lotes. */
+.titulo-campo {
+  margin-top: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+  border-bottom: 1px solid var(--borde);
+}
+
 /* Mientras se dibuja o edita en el mapa, la lista no se puede tocar. */
 .dibujando .lista-lotes {
   pointer-events: none;
@@ -1532,5 +1544,158 @@ dialog.ventana.ventana-ancha {
   /* Los créditos de las fotos ocupan todo el ancho abajo: la escala va un poco más arriba. */
   .mapa .leaflet-control-scale {
     margin-bottom: 24px;
+  }
+}
+
+/* ---------- Órdenes de trabajo ---------- */
+.mensaje.advertencia {
+  background: var(--ambar-fondo);
+  color: var(--ambar);
+  border: 1px solid var(--ambar-borde);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.texto-rojo {
+  color: var(--rojo);
+}
+
+/* El fieldset agrupa todo el formulario para poder desactivarlo junto, sin que se vea su marco. */
+fieldset.sin-marco {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Inputs dentro de las tablas de lotes y productos. */
+#tabla-lotes input,
+#tabla-productos input,
+#tabla-productos select {
+  width: 100%;
+  min-width: 90px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--borde-input);
+  border-radius: var(--radio);
+  background: var(--fondo);
+}
+
+#tabla-productos select {
+  min-width: 240px;
+}
+
+#tabla-lotes td.numero input,
+#tabla-productos td.numero input {
+  text-align: right;
+  max-width: 130px;
+}
+
+fieldset:disabled input,
+fieldset:disabled select,
+fieldset:disabled textarea {
+  background: var(--fondo-suave);
+  color: var(--texto);
+}
+
+/* La hoja de la orden, con la forma de la planilla (se ve al pie y es lo único que se imprime). */
+.hoja-orden {
+  overflow-x: auto;
+  font-size: 12px;
+  color: #000000;
+}
+
+.hoja-titulo {
+  text-align: center;
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+
+.hoja-descripcion {
+  background: #FFFF00;
+  padding: 4px 8px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+  /* Que el amarillo salga impreso (los navegadores suelen sacar los fondos). */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.hoja-cuerpo {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr 2.6fr;
+  gap: 8px;
+  align-items: start;
+  min-width: 900px;
+}
+
+.hoja-orden table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.hoja-orden th,
+.hoja-orden td {
+  border: 1px solid #999999;
+  padding: 2px 5px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #000000;
+  background: none;
+  height: auto;
+}
+
+.hoja-orden .numero {
+  text-align: right;
+}
+
+.hoja-orden .fuerte,
+.hoja-datos th,
+.hoja-productos thead th {
+  font-weight: 700;
+}
+
+.hoja-datos th {
+  width: 45%;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  body {
+    background: #FFFFFF;
+  }
+
+  .menu,
+  .barra-movil,
+  .fondo-menu,
+  .no-imprimir,
+  .aviso-flotante {
+    display: none !important;
+  }
+
+  main {
+    padding: 0;
+    max-width: none;
+  }
+
+  .tarjeta-hoja {
+    border: 0;
+    padding: 0;
+  }
+
+  .hoja-cuerpo {
+    min-width: 0;
   }
 }

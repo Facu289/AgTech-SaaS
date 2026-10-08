@@ -67,6 +67,17 @@
 - [x] Mapa de lotes en Inicio (campaña elegida, leyenda con hectáreas por cultivo)
 - [x] Importar lotes desde KMZ, KML o GeoJSON (vista previa, elegir cuáles, renombrar) y exportarlos a KML
 - [ ] Importar Shapefile (.shp en .zip: John Deere Operations Center, monitores)
+- [x] Campo (establecimiento) en los lotes: nombre único por campo, filtro, carpeta del KML = campo (migración 12)
+
+## 🚧 Órdenes de trabajo
+- [x] Cargar a mano como la planilla (pulverización terrestre, dron...): encabezado, lotes, caldo, productos
+      con dosis/ha o total (calcula el otro, por tancada y el agua) — migración 11
+- [x] Advertencia si no alcanza el stock; al marcarla realizada descuenta todo (o nada) y queda en Movimientos
+- [x] Volver a pendiente (devuelve el stock), anular, eliminar si nunca movió stock
+- [x] Registro por lote: "1 al 12" se desarma y cada lote del mapa ve dosis/ha y su cantidad en su ficha
+- [x] Imprimir con la forma de la planilla; listado con filtros y Excel; hojas en el Excel completo
+- [ ] Cargar la orden desde una foto (bot de WhatsApp/Telegram + IA)
+- [ ] Al realizar una orden, anotar el trabajo en la máquina (ha) automáticamente
 - [ ] Actividades por lote (aplicaciones con insumos del stock, labores) y avances de siembra/cosecha
 - [ ] Unir los trabajos de maquinaria al lote por id (hoy es por nombre escrito)
 

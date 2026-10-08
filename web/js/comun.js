@@ -34,6 +34,7 @@ const ICONOS = {
   lista: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
   cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
   mapa: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/>',
+  orden: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2"/><path d="M8.5 10h7M8.5 14h7M8.5 18h4"/>',
   salir: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
 };
 
@@ -194,6 +195,23 @@ function botonExportar(alHacerClic) {
 }
 
 // ---------- Formatos ----------
+
+// Lo que escribe el usuario → número (o null si no es un número). Igual que leer_numero en Python:
+// "2,5" → 2.5 | "1.500" → 1500 | "1.500,5" → 1500.5 | "0.375" → 0.375 (con 0 adelante, el punto es decimal).
+function leerNumero(texto) {
+  let limpio = String(texto ?? "").trim();
+  if (!limpio) return null;
+  if (limpio.includes(",")) limpio = limpio.replaceAll(".", "").replace(",", ".");
+  else if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(limpio)) limpio = limpio.replaceAll(".", "");
+  const numero = Number(limpio);
+  return Number.isFinite(numero) && numero >= 0 ? numero : null;
+}
+
+// Número para poner en un campo de texto: "2,084" (sin puntos de miles, para que se pueda volver a leer).
+function numeroParaCampo(numero, decimales = 3) {
+  if (numero === null || numero === undefined || !Number.isFinite(numero)) return "";
+  return numero.toLocaleString("es-AR", { maximumFractionDigits: decimales, useGrouping: false });
+}
 
 // 1500.5 -> "1.500,5"
 function formatearCantidad(numero) {
@@ -469,6 +487,7 @@ const MENU = [
     titulo: "Agricultura",
     enlaces: [
       { pagina: "lotes", texto: "Lotes", href: "lotes.html", icono: "mapa" },
+      { pagina: "ordenes", texto: "Órdenes de trabajo", href: "ordenes.html", icono: "orden" },
       { pagina: "cultivos", texto: "Cultivos", href: "cultivos.html", icono: "hoja" },
     ],
   },

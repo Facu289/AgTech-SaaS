@@ -12,6 +12,7 @@ const estado = document.getElementById("estado");
 const lista = document.getElementById("lista");
 const buscar = document.getElementById("buscar");
 const verArchivados = document.getElementById("ver-archivados");
+const filtroCampo = document.getElementById("filtro-campo");
 const totalHectareas = document.getElementById("total-hectareas");
 const selectCampania = document.getElementById("campania");
 const leyenda = document.getElementById("leyenda");
@@ -106,11 +107,11 @@ const ESTILO_DIBUJO = { color: "#FFFFFF", weight: 3, fillColor: "#0F9D6E", fillO
 
 function pintarMapa() {
   if (!mapa) return;
-  capasPorId = dibujarLotes(capaLotes, lotes.filter((l) => !l.archivado), {
+  capasPorId = dibujarLotes(capaLotes, lotes.filter((l) => !l.archivado && pasaFiltroCampo(l)), {
     seleccionado,
     alHacerClic: (lote) => !modo && seleccionar(lote.id, false),
   });
-  leyenda.replaceChildren(armarLeyenda(lotes.filter((l) => !l.archivado)));
+  leyenda.replaceChildren(armarLeyenda(lotes.filter((l) => !l.archivado && pasaFiltroCampo(l))));
 }
 
 // Que se vean todos los lotes (solo la primera vez, para no mover el mapa al refrescar).
@@ -137,16 +138,44 @@ function seleccionar(id, irAlLote = true) {
 
 // ---------- Lista ----------
 
+// Los campos que ya existen: para el filtro y para sugerir al escribir (datalist).
+function actualizarCampos() {
+  const campos = [...new Set(lotes.map((l) => l.campo).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
+  const elegido = filtroCampo.value;
+  filtroCampo.replaceChildren(el("option", { value: "" }, "Todos los campos"), ...campos.map((c) => el("option", { value: c }, c)));
+  if (lotes.some((l) => !l.campo) && campos.length) filtroCampo.append(el("option", { value: "-" }, "Sin campo"));
+  filtroCampo.value = [...filtroCampo.options].some((o) => o.value === elegido) ? elegido : "";
+  filtroCampo.hidden = campos.length === 0;
+  document.getElementById("lista-campos").replaceChildren(...campos.map((c) => el("option", { value: c })));
+}
+
+function pasaFiltroCampo(lote) {
+  if (!filtroCampo.value) return true;
+  return filtroCampo.value === "-" ? !lote.campo : lote.campo === filtroCampo.value;
+}
+
 function mostrarLista() {
   const buscado = normalizar(buscar.value);
   const visibles = lotes.filter(
-    (l) => (verArchivados.checked || !l.archivado) && (!buscado || normalizar(`${l.nombre} ${l.observaciones} ${textoCultivos(l)}`).includes(buscado)),
+    (l) =>
+      (verArchivados.checked || !l.archivado) &&
+      pasaFiltroCampo(l) &&
+      (!buscado || normalizar(`${l.campo} ${l.nombre} ${l.observaciones} ${textoCultivos(l)}`).includes(buscado)),
   );
   lista.replaceChildren();
   if (visibles.length === 0) {
     lista.append(el("li", { className: "vacio" }, lotes.length ? "Ningún lote coincide." : "Todavía no hay lotes. Tocá «Nuevo lote» y dibujalo en el mapa."));
   }
-  for (const lote of visibles) lista.append(itemLote(lote));
+  // Vienen ordenados por campo: cuando cambia el campo, va un título.
+  let campoAnterior = null;
+  const hayCampos = lotes.some((l) => l.campo);
+  for (const lote of visibles) {
+    if (hayCampos && lote.campo !== campoAnterior) {
+      lista.append(el("li", { className: "titulo-campo" }, lote.campo || "Sin campo"));
+      campoAnterior = lote.campo;
+    }
+    lista.append(itemLote(lote));
+  }
   const activos = lotes.filter((l) => !l.archivado);
   const suma = activos.reduce((total, l) => total + (l.hectareas || 0), 0);
   totalHectareas.textContent = activos.length ? `Total: ${formatearCantidad(suma)} ha en ${activos.length} lote${activos.length === 1 ? "" : "s"}` : "";
@@ -214,6 +243,7 @@ async function cargar() {
     lotes = await api("GET", `/lotes?incluir_archivados=true${filtro}`);
     if (seleccionado && !lotes.some((l) => l.id === seleccionado)) seleccionado = null;
     actualizarLinkKml();
+    actualizarCampos();
     pintarMapa();
     encuadrar();
     mostrarLista();
@@ -341,6 +371,7 @@ document.getElementById("barra-cancelar").addEventListener("click", () => {
 async function guardarForma(lote, geometria) {
   try {
     const guardado = await api("PUT", `/lotes/${lote.id}`, {
+      campo: lote.campo,
       nombre: lote.nombre,
       observaciones: lote.observaciones,
       geometria,
@@ -365,7 +396,8 @@ function abrirVentanaLote(lote, geometria = null) {
   const calculadas = lote ? lote.hectareas_calculadas : geometria ? hectareasDe(geometria) : null;
   // Si las hectáreas son las del dibujo, la ventana las propone; si no las tocás, quedan "automáticas".
   hectareasSugeridas = lote ? formatearCantidad(lote.hectareas) : formatearCantidad(calculadas);
-  if (lote) completarFormulario(formLote, { nombre: lote.nombre, observaciones: lote.observaciones });
+  if (lote) completarFormulario(formLote, { campo: lote.campo, nombre: lote.nombre, observaciones: lote.observaciones });
+  else if (filtroCampo.value && filtroCampo.value !== "-") formLote.elements.campo.value = filtroCampo.value;
   formLote.elements.hectareas.value = hectareasSugeridas;
   ayudaHectareas.textContent =
     calculadas === null
@@ -441,7 +473,17 @@ const tablaImportar = document.getElementById("tabla-importar");
 const todosImportar = document.getElementById("importar-todos");
 const capaVistaPrevia = mapa ? L.featureGroup().addTo(mapa) : null;
 const ESTILO_VISTA_PREVIA = { color: "#38BDF8", weight: 3, dashArray: "6 4", fillColor: "#38BDF8", fillOpacity: 0.2 };
-let filasImportar = []; // [{lote (lo leído), casilla, nombre (input), estado (celda)}]
+let filasImportar = []; // [{lote (lo leído), casilla, campo (input), nombre (input), estado (celda)}]
+const campoImportar = document.getElementById("importar-campo");
+
+// El "campo para todo el archivo" se copia a cada lote (salvo a los que cambiaste a mano).
+campoImportar.addEventListener("input", () => {
+  for (const fila of filasImportar) {
+    if (fila.campo.dataset.tocado) continue;
+    fila.campo.value = campoImportar.value;
+    actualizarEstadoImportar(fila);
+  }
+});
 
 document.getElementById("boton-importar").addEventListener("click", () => archivoImportar.click());
 
@@ -477,7 +519,8 @@ archivoImportar.addEventListener("change", async () => {
 // ¿Qué va a pasar con esta fila? Se recalcula si le cambiás el nombre o la tildás.
 function actualizarEstadoImportar(fila) {
   const nombre = normalizar(fila.nombre.value.trim());
-  const existente = lotes.find((l) => normalizar(l.nombre) === nombre);
+  const campo = normalizar(fila.campo.value.trim());
+  const existente = lotes.find((l) => normalizar(l.nombre) === nombre && normalizar(l.campo) === campo);
   let texto = "Se crea";
   let color = "verde";
   if (!fila.casilla.checked) [texto, color] = ["No se importa", "gris"];
@@ -490,18 +533,27 @@ function mostrarVistaPrevia(nombreArchivo, previa) {
   filasImportar = [];
   tablaImportar.replaceChildren();
   capaVistaPrevia?.clearLayers();
+  // Si todo el archivo trae el mismo campo (ej: su carpeta), se propone para todos.
+  const camposDelArchivo = [...new Set(previa.lotes.map((l) => l.campo))];
+  campoImportar.value = camposDelArchivo.length === 1 ? camposDelArchivo[0] : "";
   for (const lote of previa.lotes) {
     // Si ya hay uno con ese nombre, arranca SIN tildar: cambiar una forma tiene que ser a propósito.
     const casilla = el("input", { type: "checkbox", checked: !lote.existente, "aria-label": `Importar ${lote.nombre}` });
     const nombre = el("input", { value: lote.nombre, maxLength: 80, "aria-label": "Nombre del lote" });
+    const campo = el("input", { value: lote.campo, maxLength: 80, "aria-label": "Campo" });
+    campo.setAttribute("list", "lista-campos"); // "list" no se puede poner como propiedad: va como atributo.
     const estado = el("td", {});
-    const fila = { lote, casilla, nombre, estado };
+    const fila = { lote, casilla, campo, nombre, estado };
+    campo.addEventListener("input", () => {
+      campo.dataset.tocado = "si";
+      actualizarEstadoImportar(fila);
+    });
     casilla.addEventListener("change", () => {
       actualizarEstadoImportar(fila);
       todosImportar.checked = filasImportar.every((f) => f.casilla.checked);
     });
     nombre.addEventListener("input", () => actualizarEstadoImportar(fila));
-    tablaImportar.append(el("tr", {}, el("td", {}, casilla), el("td", {}, nombre), el("td", { className: "numero" }, formatearCantidad(lote.hectareas)), estado));
+    tablaImportar.append(el("tr", {}, el("td", {}, casilla), el("td", {}, campo), el("td", {}, nombre), el("td", { className: "numero" }, formatearCantidad(lote.hectareas)), estado));
     actualizarEstadoImportar(fila);
     filasImportar.push(fila);
     if (capaVistaPrevia) {
@@ -510,7 +562,7 @@ function mostrarVistaPrevia(nombreArchivo, previa) {
         .addTo(capaVistaPrevia);
     }
   }
-  if (previa.lotes.length === 0) tablaImportar.append(filaVacia(4, "El archivo no tiene lotes que se puedan usar."));
+  if (previa.lotes.length === 0) tablaImportar.append(filaVacia(5, "El archivo no tiene lotes que se puedan usar."));
   todosImportar.checked = filasImportar.length > 0 && filasImportar.every((f) => f.casilla.checked);
 
   const total = previa.lotes.reduce((suma, l) => suma + l.hectareas, 0);
@@ -541,7 +593,7 @@ formImportar.addEventListener("submit", async (evento) => {
   }
   const resultado = await enviarFormulario(formImportar, () =>
     api("POST", "/lotes/importar", {
-      lotes: elegidos.map((f) => ({ nombre: f.nombre.value.trim(), geometria: f.lote.geometria, actualizar: true })),
+      lotes: elegidos.map((f) => ({ campo: f.campo.value.trim(), nombre: f.nombre.value.trim(), geometria: f.lote.geometria, actualizar: true })),
     }),
   );
   if (!resultado) return;
@@ -572,13 +624,18 @@ botonNuevo.before(
     exportarExcel(
       "lotes",
       `Lotes ${campania?.nombre ?? ""}`.trim(),
-      ["Lote", "Hectáreas", "Hectáreas del dibujo", `Cultivos ${campania?.nombre ?? ""}`.trim(), "Archivado", "Observaciones"],
-      lotes.map((l) => [l.nombre, l.hectareas, l.hectareas_calculadas, textoCultivos(l), l.archivado ? "Sí" : "No", l.observaciones]),
+      ["Campo", "Lote", "Hectáreas", "Hectáreas del dibujo", `Cultivos ${campania?.nombre ?? ""}`.trim(), "Archivado", "Observaciones"],
+      lotes.filter(pasaFiltroCampo).map((l) => [l.campo, l.nombre, l.hectareas, l.hectareas_calculadas, textoCultivos(l), l.archivado ? "Sí" : "No", l.observaciones]),
     ),
   ),
 );
 buscar.addEventListener("input", mostrarLista);
 verArchivados.addEventListener("change", mostrarLista);
+filtroCampo.addEventListener("change", () => {
+  pintarMapa();
+  if (capaLotes?.getLayers().length) mapa.fitBounds(capaLotes.getBounds(), { padding: [24, 24], maxZoom: 17 });
+  mostrarLista();
+});
 
 cargar();
 refrescarAutomaticamente(cargar);

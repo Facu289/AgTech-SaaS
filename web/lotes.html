@@ -57,6 +57,7 @@
             <label class="buscador" data-icono-lupa>
               <input id="buscar" type="search" placeholder="Buscar lote…" aria-label="Buscar lote" autocomplete="off">
             </label>
+            <select id="filtro-campo" aria-label="Campo"></select>
           </div>
           <div class="lista-lotes-pie">
             <p class="suave chico" id="total-hectareas"></p>
@@ -75,7 +76,8 @@
         <h2 id="t-lote">Nuevo lote</h2>
       </div>
       <div class="campos" style="--columnas: 1fr 1fr">
-        <label class="campo"><span>Nombre</span><input name="nombre" required maxlength="80" autocomplete="off" placeholder="Ej: La Loma"></label>
+        <label class="campo"><span>Campo (opcional)</span><input name="campo" maxlength="80" autocomplete="off" list="lista-campos" placeholder="Ej: LM, SR Oeste"></label>
+        <label class="campo"><span>Nombre o número</span><input name="nombre" required maxlength="80" autocomplete="off" placeholder="Ej: 12, La Loma"></label>
         <label class="campo"><span>Hectáreas</span><input name="hectareas" inputmode="decimal" autocomplete="off" placeholder="Del dibujo"></label>
         <p class="ayuda" id="ayuda-hectareas" style="grid-column: 1 / -1"></p>
         <label class="campo" style="grid-column: 1 / -1"><span>Observaciones</span><textarea name="observaciones" maxlength="1000" placeholder="Ej: loma arenosa, entra por la tranquera norte…"></textarea></label>
@@ -89,6 +91,8 @@
     </form>
   </dialog>
 
+  <datalist id="lista-campos"></datalist>
+
   <!-- Vista previa de lo que trae un archivo, antes de guardarlo -->
   <dialog class="ventana ventana-ancha" id="ventana-importar" aria-labelledby="t-importar">
     <form method="dialog" id="form-importar">
@@ -97,12 +101,16 @@
         <h2 id="t-importar">Importar lotes</h2>
       </div>
       <p class="ayuda" id="importar-resumen"></p>
+      <div class="campos" style="--columnas: minmax(180px, 320px)">
+        <label class="campo"><span>Campo para todo el archivo</span>
+          <input id="importar-campo" maxlength="80" autocomplete="off" list="lista-campos" placeholder="Ej: SR Oeste (se puede cambiar por lote)"></label>
+      </div>
       <p class="ayuda" id="importar-errores" style="color: var(--rojo)" hidden></p>
       <div class="contenedor-tabla tabla-importar">
         <table>
           <thead>
             <tr><th><input type="checkbox" id="importar-todos" aria-label="Elegir todos" checked></th>
-              <th>Nombre</th><th class="numero">Hectáreas</th><th>Qué va a pasar</th></tr>
+              <th>Campo</th><th>Nombre</th><th class="numero">Hectáreas</th><th>Qué va a pasar</th></tr>
           </thead>
           <tbody id="tabla-importar"></tbody>
         </table>

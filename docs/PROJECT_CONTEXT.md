@@ -54,6 +54,7 @@ agroapp/
 │   ├── insumos/ maquinaria/ ganaderia/   cada una: db.py (SQL) · rutas.py (API) · telegram.py (bot)
 │   ├── lotes/     db.py · rutas.py · geometria.py (validar el polígono y calcular hectáreas). También cultivos,
 │   │              campañas y cultivo por lote. importar.py: leer KMZ/KML/GeoJSON y armar KML. Sin Telegram todavía
+│   ├── ordenes/   órdenes de trabajo: db.py (descuento de stock) · rutas.py (desarmar "1 al 12", registro por lote)
 │   ├── usuarios/  login: db.py (hash y sesiones) · rutas.py (/login, /logout, /yo y el portero) · crear_usuario.py
 │   └── telegram/  comandos.py (reparte mensajes) · lenguaje_natural.py (Gemini) · notas.py
 ├── bot/bot.py   ← cartero Telegram ↔ backend
@@ -135,7 +136,8 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
 - `usuarios` (migración 8): nombre (UNIQUE NOCASE), hash_contrasena ("scrypt$N$r$p$sal$huella"),
   activo. `sesiones`: hash_token (sha256 del token de la cookie, nunca el token), usuario_id,
   expira_en (30 días). Cambiar la contraseña cierra las sesiones de ese usuario.
-- `lotes` (migración 9): nombre (UNIQUE NOCASE), geometria (polígono GeoJSON como TEXTO, puede ser NULL),
+- `lotes` (migración 9; la 12 la reconstruyó): campo (establecimiento, opcional: "LM", "SR Oeste"), nombre,
+  UNIQUE (campo, nombre) sin mayúsculas: el "1" puede repetirse en cada campo. geometria (polígono GeoJSON como TEXTO, puede ser NULL),
   hectareas (las del dibujo, o escritas a mano), observaciones, archivado, creado_en, actualizado_en.
   La API devuelve además `hectareas_calculadas` (las del dibujo) para mostrar si se cargaron a mano.
   Con cultivos cargados no se elimina: se archiva.
@@ -147,6 +149,12 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
   Cultivos y campañas usados en algún lote no se eliminan.
   Hectáreas = área geodésica con el radio de la Tierra en la latitud del lote (elipsoide WGS84):
   la misma cuenta en `app/lotes/geometria.py` y en `web/js/lotes.js` (si cambia una, cambiar la otra).
+- `ordenes_trabajo` (migración 11): numero (texto libre, solo para identificar: "1-033"), campania_id, campo,
+  tarea (`TAREAS_ORDEN` en opciones.py), maquina, operarios (texto), fecha_emision, fecha_realizacion, estado_lote,
+  cultivo, caldo_ha, tancadas, descripcion, estado (pendiente / realizada / anulada).
+  `orden_lotes`: lote (TEXTO como en la planilla: "31+32", "1 al 12") + hectareas.
+  `orden_productos`: insumo_id + cantidad_total (lo que sale del stock). La dosis/ha NO se guarda: = total / ha de la orden.
+  `movimientos.orden_id`: qué orden hizo cada salida (o devolución) de stock.
 - **Migraciones**: lista `MIGRACIONES` en database.py. Nunca editar una ya aplicada: agregar otra.
   Antes de migrar se hace un backup automático.
 
@@ -218,6 +226,17 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
   Exportar: `GET /exportar/lotes-kml?campania_id=` (KML pintado con el color del cultivo).
   Shapefile (.shp) NO: necesita una librería y leer el sistema de coordenadas (.prj).
 
+- Órdenes de trabajo: se cargan a mano ANTES de aplicar (no tocan el stock). Si no alcanza el stock, se guarda
+  igual con una ADVERTENCIA. Al marcarla REALIZADA salen del stock todos los productos en una transacción (si a
+  uno no le alcanza, no sale ninguno). "Volver a pendiente" devuelve el stock con ENTRADAS (el historial queda).
+  Solo se edita pendiente; se elimina solo si nunca movió stock (si no, se anula). El agua no es del stock.
+- Registro por lote: la fila de lotes de la orden se desarma ("31+32" → 31 y 32; "1 al 12" → 1..12) y cada uno
+  se busca en el mapa por campo de la orden + nombre ("Lote 5" = "5"). Se calcula al mostrar (no se guarda el
+  vínculo): si un lote se carga después, se vincula solo. Cantidad del lote = dosis/ha de la orden × ha del lote
+  (las del mapa). Sin campo en la orden, solo vincula si hay UN lote con ese nombre.
+- La orden se imprime con la forma de la planilla (la "Vista de impresión" al pie es lo único que sale al
+  imprimir; A4 horizontal).
+
 ## Lecciones aprendidas (errores que ya nos pasaron)
 - No abrir `agroapp.db` en VS Code: se corrompe.
 - `.venv\.gitignore` contiene `*`: no moverlo a la raíz.
@@ -232,6 +251,11 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - StaticFiles normaliza las rutas ("/web/css/../index.html" → index.html): por eso la lista de
   rutas libres del login es EXACTA y no "todo lo que empiece con /web/css/". Hay un test.
 - Una sombra (box-shadow) de un menú escondido con translateX(-100%) asoma igual: ponerla solo abierto.
+- `leer_numero("0.375")` daba 375 (tomaba el punto como de miles). Ahora, con 0 adelante el punto es decimal.
+  En una dosis es grave: 0,375 l/ha no puede volverse 375. La web tiene la misma regla en `leerNumero` (comun.js).
+- El backend de la PC corre con --reload sobre la misma carpeta en la que se programa: apenas se guarda una
+  migración nueva, se aplica a la base de la PC (con backup antes). Por eso una migración, una vez escrita, no se
+  cambia: si hace falta otra cosa, va otra migración. Para probar a mano, usar una base temporal (AGROAPP_DB).
 - Leaflet mide el mapa al arrancar: si después cambia de tamaño, quedan franjas grises. Se arregla con
   un ResizeObserver que llama a `mapa.invalidateSize()`. Y el contenedor del mapa necesita
   `position: relative; z-index: 0` para que sus capas no tapen el menú del celular.

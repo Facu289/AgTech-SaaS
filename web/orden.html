@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orden de trabajo · AgroApp</title>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="ordenes">
+  <main>
+    <a class="volver no-imprimir" href="ordenes.html" data-icono="flecha_izq">Volver a las órdenes</a>
+
+    <div class="seccion-encabezado no-imprimir">
+      <div>
+        <h1 id="titulo">Nueva orden de trabajo</h1>
+        <p class="subtitulo" id="subtitulo"></p>
+      </div>
+      <div class="acciones" id="acciones"></div>
+    </div>
+
+    <div id="advertencias" class="mensaje advertencia no-imprimir" hidden></div>
+    <div id="sin-vincular" class="ayuda no-imprimir" hidden></div>
+
+    <form id="form-orden" class="no-imprimir" novalidate>
+      <!-- fieldset: si la orden ya está realizada o anulada, se desactiva todo junto -->
+      <fieldset id="campos-orden" class="sin-marco">
+        <section class="tarjeta" aria-labelledby="t-encabezado">
+          <div class="tarjeta-titulo">
+            <div class="icono-caja" data-icono="orden"></div>
+            <h2 id="t-encabezado">Encabezado</h2>
+          </div>
+          <div class="campos" style="--columnas: repeat(4, minmax(0, 1fr))">
+            <label class="campo"><span>N° de orden</span><input name="numero" maxlength="30" autocomplete="off" placeholder="Ej: 1-033"></label>
+            <label class="campo"><span>Fecha de emisión</span><input name="fecha_emision" type="date" required></label>
+            <label class="campo"><span>Campaña</span><select name="campania_id" data-campanias></select></label>
+            <label class="campo"><span>Tarea</span><select name="tarea" required data-tareas></select></label>
+            <label class="campo"><span>Campo</span><input name="campo" maxlength="80" autocomplete="off" list="lista-campos" placeholder="Ej: LM"></label>
+            <label class="campo"><span>Máquina</span><input name="maquina" maxlength="80" autocomplete="off" list="lista-maquinas" placeholder="Ej: XAG 150"></label>
+            <label class="campo" style="grid-column: span 2"><span>Operarios (separados por coma)</span>
+              <input name="operarios" maxlength="300" autocomplete="off" placeholder="Ej: A. Fuentes, M. Vivas"></label>
+            <label class="campo"><span>Estado del lote</span><input name="estado_lote" maxlength="80" autocomplete="off" list="lista-cultivos" placeholder="Ej: Maíz"></label>
+            <label class="campo"><span>Cultivo</span><input name="cultivo" maxlength="80" autocomplete="off" list="lista-cultivos"></label>
+            <label class="campo"><span>Caldo (litros/ha)</span><input name="caldo_ha" inputmode="decimal" autocomplete="off" placeholder="Ej: 30"></label>
+            <label class="campo"><span>Cantidad de tancadas</span><input name="tancadas" type="number" min="1" step="1" placeholder="Ej: 2"></label>
+            <label class="campo" style="grid-column: 1 / -1"><span>Descripción / indicaciones</span>
+              <textarea name="descripcion" maxlength="2000" placeholder="Ej: Altura de vuelo 3 m, ancho de labor 8 m, velocidad 40 km/h, gota 150 micrones"></textarea></label>
+          </div>
+        </section>
+
+        <section class="tarjeta" aria-labelledby="t-lotes">
+          <div class="seccion-encabezado">
+            <div class="tarjeta-titulo">
+              <div class="icono-caja" data-icono="mapa"></div>
+              <h2 id="t-lotes">Lotes a aplicar</h2>
+            </div>
+            <span class="fuerte" id="total-ha"></span>
+          </div>
+          <p class="ayuda">Como en la planilla: «31+32», «44N», «1 al 12». La app busca cada lote en el mapa (en el campo de la orden)
+            para anotarle la aplicación.</p>
+          <div class="contenedor-tabla">
+            <table>
+              <thead><tr><th>Lote(s)</th><th class="numero">Hectáreas</th><th><span hidden>Quitar</span></th></tr></thead>
+              <tbody id="tabla-lotes"></tbody>
+            </table>
+          </div>
+          <div><button class="boton boton-secundario" type="button" id="agregar-lote" data-icono="mas">Agregar lote</button></div>
+        </section>
+
+        <section class="tarjeta" aria-labelledby="t-productos">
+          <div class="seccion-encabezado">
+            <div class="tarjeta-titulo">
+              <div class="icono-caja" data-icono="quimico"></div>
+              <h2 id="t-productos">Productos</h2>
+            </div>
+            <span class="suave chico" id="resumen-caldo"></span>
+          </div>
+          <p class="ayuda">Escribí la <strong>dosis por hectárea</strong> o el <strong>total</strong>: la app calcula lo otro.
+            El total es lo que sale del stock al realizar la orden. El agua se calcula sola y no se descuenta.</p>
+          <div class="contenedor-tabla">
+            <table class="tabla-productos">
+              <thead>
+                <tr><th>Producto</th><th class="numero">Dosis/ha</th><th class="numero">Total</th><th class="numero">Por tancada</th>
+                  <th class="numero">Stock</th><th><span hidden>Quitar</span></th></tr>
+              </thead>
+              <tbody id="tabla-productos"></tbody>
+              <tfoot id="pie-productos"></tfoot>
+            </table>
+          </div>
+          <div><button class="boton boton-secundario" type="button" id="agregar-producto" data-icono="mas">Agregar producto</button></div>
+        </section>
+      </fieldset>
+
+      <p class="mensaje" hidden></p>
+      <div class="ventana-pie" id="pie-guardar">
+        <button class="boton" type="submit" data-icono="check">Guardar orden</button>
+      </div>
+    </form>
+
+    <section class="tarjeta no-imprimir" id="tarjeta-movimientos" hidden aria-labelledby="t-movimientos">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="flechas"></div>
+        <h2 id="t-movimientos">Movimientos de stock de esta orden</h2>
+      </div>
+      <div class="contenedor-tabla">
+        <table>
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th class="numero">Cantidad</th><th>Motivo</th></tr></thead>
+          <tbody id="tabla-movimientos"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- La hoja para imprimir (con la forma de la planilla): se arma con los datos GUARDADOS -->
+    <section class="tarjeta tarjeta-hoja" id="tarjeta-hoja" hidden aria-labelledby="t-hoja">
+      <div class="tarjeta-titulo no-imprimir">
+        <div class="icono-caja" data-icono="descarga"></div>
+        <h2 id="t-hoja">Vista de impresión</h2>
+      </div>
+      <div id="hoja" class="hoja-orden"></div>
+    </section>
+  </main>
+
+  <datalist id="lista-campos"></datalist>
+  <datalist id="lista-maquinas"></datalist>
+  <datalist id="lista-cultivos"></datalist>
+
+  <!-- Realizar: pide la fecha en que se aplicó -->
+  <dialog class="ventana" id="ventana-realizar" aria-labelledby="t-realizar">
+    <form method="dialog" id="form-realizar">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="check"></div>
+        <h2 id="t-realizar">Marcar como realizada</h2>
+      </div>
+      <p class="ayuda" id="realizar-detalle"></p>
+      <div class="campos" style="--columnas: minmax(180px, 240px)">
+        <label class="campo"><span>Fecha en que se aplicó</span><input name="fecha_realizacion" type="date" required></label>
+      </div>
+      <p class="mensaje" hidden></p>
+      <div class="ventana-pie">
+        <button class="boton boton-secundario" type="button" value="cancelar">Cancelar</button>
+        <button class="boton" type="submit" data-icono="check">Realizada: descontar del stock</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/comun.js"></script>
+  <script src="js/comun-lotes.js"></script>
+  <script src="js/orden.js"></script>
+</body>
+</html>

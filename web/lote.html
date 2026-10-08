@@ -51,6 +51,23 @@
       </div>
     </section>
 
+    <section class="tarjeta" aria-labelledby="t-aplicaciones">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="orden"></div>
+        <h2 id="t-aplicaciones">Aplicaciones (órdenes de trabajo)</h2>
+      </div>
+      <p class="ayuda">Lo que le tocó a ESTE lote en cada orden: la dosis por hectárea de la orden × las hectáreas del lote.</p>
+      <div class="contenedor-tabla">
+        <table>
+          <thead>
+            <tr><th>Fecha</th><th>Orden</th><th>Tarea</th><th>Estado</th><th>Producto</th>
+              <th class="numero">Dosis/ha</th><th class="numero">En este lote</th></tr>
+          </thead>
+          <tbody id="tabla-aplicaciones"></tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="tarjeta" aria-labelledby="t-trabajos">
       <div class="tarjeta-titulo">
         <div class="icono-caja" data-icono="tractor"></div>

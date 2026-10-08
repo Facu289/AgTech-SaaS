@@ -24,7 +24,8 @@ router = APIRouter(tags=["Lotes"])
 class LoteDatos(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    nombre: str = Field(min_length=1, max_length=80)  # Ej: "La Loma", "Lote 4"
+    campo: str = Field(default="", max_length=80)       # Establecimiento: "LM", "SR Oeste" (opcional)
+    nombre: str = Field(min_length=1, max_length=80)  # Ej: "La Loma", "4"
     geometria: Optional[dict[str, Any]] = None        # Polígono GeoJSON (vacío = lote sin dibujar).
     hectareas: NumeroOpcional = None                  # Vacío = las calcula la app con el dibujo.
     observaciones: str = Field(default="", max_length=1000)
@@ -72,13 +73,18 @@ class LoteCultivoDatos(BaseModel):
 
 # ---------- Reglas ----------
 
-def _revisar_nombre(nombre, excluir_id=None):
-    """Dos lotes no pueden llamarse igual (sin importar mayúsculas ni tildes)."""
-    buscado = normalizar_texto(nombre)
+def mismo_lote(lote, campo, nombre):
+    """¿Es el mismo campo y el mismo nombre? (sin importar mayúsculas ni tildes)."""
+    return normalizar_texto(lote["campo"]) == normalizar_texto(campo) and normalizar_texto(lote["nombre"]) == normalizar_texto(nombre)
+
+
+def _revisar_nombre(nombre, campo="", excluir_id=None):
+    """En un mismo campo no puede haber dos lotes con el mismo nombre (en campos distintos, sí)."""
     for lote in lotes_db.listar_lotes(incluir_archivados=True):
-        if lote["id"] != excluir_id and normalizar_texto(lote["nombre"]) == buscado:
+        if lote["id"] != excluir_id and mismo_lote(lote, campo, nombre):
             extra = " (está archivado)" if lote["archivado"] else ""
-            raise HTTPException(status_code=409, detail=f"Ya existe un lote llamado '{lote['nombre']}'{extra}")
+            donde = f" en el campo '{lote['campo']}'" if lote["campo"] else ""
+            raise HTTPException(status_code=409, detail=f"Ya existe un lote llamado '{lote['nombre']}'{donde}{extra}")
 
 
 def _revisar_nombre_en(listado, nombre, que, excluir_id=None):
@@ -138,14 +144,14 @@ def ver_lote(lote_id: int):
 
 @router.post("/lotes", status_code=201)
 def crear_lote(datos: LoteDatos):
-    _revisar_nombre(datos.nombre)
+    _revisar_nombre(datos.nombre, datos.campo)
     return _con_calculo(lotes_db.agregar_lote(_datos_lote(datos)))
 
 
 @router.put("/lotes/{lote_id}")
 def editar_lote(lote_id: int, datos: LoteDatos):
     lotes_db.obtener_lote(lote_id)  # 404 si no existe (antes de revisar el nombre).
-    _revisar_nombre(datos.nombre, lote_id)
+    _revisar_nombre(datos.nombre, datos.campo, lote_id)
     return _con_calculo(lotes_db.editar_lote(lote_id, _datos_lote(datos)))
 
 
@@ -256,6 +262,7 @@ class ArchivoParaLeer(BaseModel):
 
 
 class LoteParaImportar(BaseModel):
+    campo: str = ""
     nombre: str
     geometria: dict[str, Any]
     actualizar: bool = False  # Si ya existe un lote con ese nombre: True = cambiarle la forma.
@@ -265,9 +272,8 @@ class PedidoImportar(BaseModel):
     lotes: list[LoteParaImportar] = Field(max_length=1000)
 
 
-def _lote_con_mismo_nombre(nombre, lotes):
-    buscado = normalizar_texto(nombre)
-    return next((l for l in lotes if normalizar_texto(l["nombre"]) == buscado), None)
+def _lote_con_mismo_nombre(campo, nombre, lotes):
+    return next((l for l in lotes if mismo_lote(l, campo, nombre)), None)
 
 
 @router.post("/lotes/importar/leer")
@@ -282,7 +288,7 @@ def leer_archivo_de_lotes(archivo: ArchivoParaLeer):
         raise HTTPException(status_code=400, detail=f"No se pudo importar: {error}.")
     existentes = lotes_db.listar_lotes(incluir_archivados=True)
     for lote in leidos:
-        igual = _lote_con_mismo_nombre(lote["nombre"], existentes)
+        igual = _lote_con_mismo_nombre(lote["campo"], lote["nombre"], existentes)
         lote["existente"] = {"id": igual["id"], "nombre": igual["nombre"], "archivado": igual["archivado"]} if igual else None
     return {"lotes": leidos, "errores": errores}
 
@@ -293,12 +299,13 @@ def importar_lotes(pedido: PedidoImportar):
     creados, actualizados, salteados, errores = [], [], [], []
     for item in pedido.lotes:
         try:
-            datos = LoteDatos(nombre=item.nombre, geometria=item.geometria)  # Misma validación que a mano.
+            # Misma validación que a mano.
+            datos = LoteDatos(campo=item.campo, nombre=item.nombre, geometria=item.geometria)
         except ValidationError as error:
             # Un lote malo no frena a los demás: se avisa cuál y por qué.
             errores.append(f"«{item.nombre[:80]}»: {error.errors()[0]['msg'].replace('Value error, ', '')}")
             continue
-        existente = _lote_con_mismo_nombre(datos.nombre, lotes_db.listar_lotes(incluir_archivados=True))
+        existente = _lote_con_mismo_nombre(datos.campo, datos.nombre, lotes_db.listar_lotes(incluir_archivados=True))
         if existente is None:
             creados.append(lotes_db.agregar_lote(_datos_lote(datos))["nombre"])
         elif item.actualizar:
@@ -308,7 +315,8 @@ def importar_lotes(pedido: PedidoImportar):
                 calculadas is None or abs(existente["hectareas"] - calculadas) > 0.005
             )
             nuevos = LoteDatos(
-                nombre=existente["nombre"], geometria=datos.geometria, observaciones=existente["observaciones"],
+                campo=existente["campo"], nombre=existente["nombre"], geometria=datos.geometria,
+                observaciones=existente["observaciones"],
                 hectareas=existente["hectareas"] if a_mano else None,
             )
             actualizados.append(lotes_db.editar_lote(existente["id"], _datos_lote(nuevos))["nombre"])

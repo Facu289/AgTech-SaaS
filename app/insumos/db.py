@@ -184,6 +184,17 @@ def listar_movimientos(insumo_id):
         return filas_a_dicts(filas)
 
 
+def movimientos_de_orden(orden_id):
+    """Las salidas (y devoluciones) de stock que hizo una orden de trabajo."""
+    with conectar() as conexion:
+        filas = conexion.execute(
+            "SELECT mv.id, mv.insumo_id, i.nombre AS insumo_nombre, i.unidad, mv.tipo, mv.cantidad, mv.motivo, mv.fecha "
+            "FROM movimientos mv JOIN insumos i ON i.id = mv.insumo_id WHERE mv.orden_id = ? ORDER BY mv.id",
+            (orden_id,),
+        ).fetchall()
+        return filas_a_dicts(filas)
+
+
 def buscar_movimientos(insumo_id=None, tipo=None, categoria=None, desde=None, hasta=None, texto=None, limite=500):
     """Historial de TODOS los insumos con filtros opcionales (el más nuevo primero).
 

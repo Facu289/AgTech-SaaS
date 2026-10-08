@@ -26,6 +26,8 @@ from app.insumos import db as insumos_db
 from app.insumos import rutas as insumos_rutas
 from app.lotes import db as lotes_db
 from app.lotes import rutas as lotes_rutas
+from app.ordenes import db as ordenes_db
+from app.ordenes import rutas as ordenes_rutas
 from app.maquinaria import db as maquinaria_db
 from app.maquinaria import rutas as maquinaria_rutas
 from app.nucleo import backup, database, opciones
@@ -56,6 +58,7 @@ app.include_router(insumos_rutas.router)
 app.include_router(maquinaria_rutas.router)
 app.include_router(ganaderia_rutas.router)
 app.include_router(lotes_rutas.router)
+app.include_router(ordenes_rutas.router)
 app.include_router(exportar.router)
 app.include_router(usuarios_rutas.router)
 
@@ -80,6 +83,7 @@ NO_ENCONTRADO = {
     maquinaria_db.MaquinaNoEncontrada: "No existe esa máquina.",
     ganaderia_db.AnimalNoEncontrado: "No existe ese animal.",
     lotes_db.LoteNoEncontrado: "No existe ese lote.",
+    ordenes_db.OrdenNoEncontrada: "No existe esa orden de trabajo.",
 }
 
 
@@ -105,6 +109,11 @@ def error_archivado(request: Request, error):
 @app.exception_handler(insumos_db.StockInsuficiente)
 def error_stock(request: Request, error: insumos_db.StockInsuficiente):
     return _error(400, f"Stock insuficiente: hay {formatear_cantidad(error.disponible)}")
+
+
+@app.exception_handler(ordenes_db.EstadoInvalido)
+def error_estado_orden(request: Request, error):
+    return _error(409, str(error))
 
 
 @app.exception_handler(ganaderia_db.EventoInvalido)
