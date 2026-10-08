@@ -84,13 +84,13 @@ Respondé en español (Argentina).
 - **Órdenes de trabajo + campo en los lotes** (rama `claude/ordenes`, sale de main; falta el OK para commit):
   órdenes como la planilla de pulverización, advertencia de stock, descuento al realizar, registro por lote
   ("1 al 12" se desarma), impresión. Lotes con campo. Migraciones 11 y 12.
-- **Inicio y barra lateral nuevos** (rama `claude/dashboard`, sale de main; falta el OK para commit): mapa
-  general, última orden, última actividad, accesos rápidos; menú por grupos con Agricultura primero.
-- **WhatsApp**: programado en la rama `claude/whatsapp` (carpeta `agroapp-whatsapp`), sin commit todavía.
+- **Inicio y barra lateral nuevos** (en main): mapa general, última orden, última actividad, accesos rápidos;
+  menú por grupos con Agricultura primero.
+- **WhatsApp**: hecho y en main (`app/whatsapp/rutas.py`). Falta ponerlo en marcha en el NAS (ver F).
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
 - **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 12** (lotes, cultivos, campañas, órdenes y campo), backup diario y
   antes de cada migración.
-- **Tests**: 194 pasan (`python -m pytest`) con lo del NAS, Lotes, importar KMZ, órdenes, campo y el Inicio.
+- **Tests**: 221 pasan (`python -m pytest`) con lo del NAS, Lotes, importar KMZ, órdenes, campo, WhatsApp y el Inicio.
 - **Preparado para el NAS** (rama `claude/project-thread-pfy3gt`, sale de `claude/login`):
   `Dockerfile`, `docker-compose.yml` (api + bot), `GET /salud` con healthcheck, backup diario
   aunque la app no se reinicie, rutas y zona horaria desde el `.env` y el script de mudanza
@@ -133,14 +133,19 @@ En la historia de Git no hay ningún `.env` ni base. En el NAS se baja con una d
 Falta: mergear a main, poner `AGROAPP_BOT_TOKEN` en el `.env` y crear tu usuario.
 Al publicarla con HTTPS: `AGROAPP_COOKIE_SEGURA=1` (o uvicorn con `--proxy-headers`).
 
-### F. Bot de WhatsApp
-- Meta WhatsApp Cloud API: cuenta de Meta for Developers, app, número de prueba.
-- Webhook `POST /whatsapp` publicado con Cloudflare Tunnel (solo esa ruta), con la
-  verificación inicial y la **firma de cada mensaje** (secreto de la app).
-- Un "cartero" de WhatsApp que reusa `POST /mensaje`: los mismos comandos y el mismo Gemini que
-  Telegram.
-- Lista de números autorizados. Tests.
-- Revisar la documentación vigente de Meta al empezar (cambia seguido).
+### F. Bot de WhatsApp — código ✅, falta ponerlo en marcha
+Hecho: `GET /whatsapp` (verificación) y `POST /whatsapp` (firma X-Hub-Signature-256 con el App
+Secret), mismos comandos, Gemini y "sí" que Telegram, números autorizados, tests.
+Cuenta de Meta lista (WABA 2291926221567276, Phone number ID 1390060194181902) y Cloudflare Tunnel
+andando en `https://agro.grindnode.uk`.
+Falta, en orden:
+1. Poner las 5 variables `WHATSAPP_...` (ver `ejemplo_env.txt`) en el `.env` del NAS, a mano con
+   `nano` (NO copiar el `.env` de la PC entero: pisa el bloque Docker/NAS).
+2. En el NAS: `git pull && docker compose up -d --build`.
+3. En Meta: webhook `https://agro.grindnode.uk/whatsapp`, el mismo verify token del `.env`,
+   suscribir el campo "messages". Probar con `/ayuda` desde el celu.
+4. Telegram y WhatsApp conviven unas semanas; después se apaga el servicio `bot` (Telegram).
+5. Seguridad: que el túnel publique SOLO `/whatsapp` (hoy publica toda la app).
 
 ### G. Backups fuera del NAS
 Copia diaria de `datos/backups` a la nube (rclone u otro) y una prueba de restaurar.

@@ -97,7 +97,10 @@
 - [x] Login en la web: usuario y contraseña (hash scrypt), sesión con cookie (HttpOnly, SameSite=Lax,
       Secure con HTTPS), página de login y botón Salir, toda la web y la API protegidas, el bot entra
       con su token (AGROAPP_BOT_TOKEN), usuarios por consola (`python -m app.usuarios.crear_usuario`), migración 8
-- [ ] Bot de WhatsApp (Meta Cloud API + Cloudflare Tunnel), mismos comandos que Telegram
+- [x] Bot de WhatsApp (Meta Cloud API): webhook `/whatsapp` con firma, mismos comandos y Gemini que Telegram
+- [ ] WhatsApp en el NAS: variables en el .env, webhook en Meta, probar desde el celu
+- [ ] Migrar de Telegram a WhatsApp (convivir unas semanas y después apagar el bot de Telegram)
+- [ ] Cloudflare Tunnel: publicar SOLO `/whatsapp` (hoy publica toda la app, protegida por el login)
 - [ ] Backups fuera del NAS (nube)
 
 ## Después

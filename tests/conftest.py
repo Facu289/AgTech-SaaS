@@ -20,7 +20,7 @@ MODULOS = [
     "app.alertas", "app.exportar", "app.actividad",
     "app.telegram.notas", "app.insumos.telegram", "app.maquinaria.telegram", "app.ganaderia.telegram",
     "app.telegram.lenguaje_natural", "app.telegram.comandos",
-    "app.usuarios.db", "app.usuarios.rutas", "app.main",
+    "app.usuarios.db", "app.usuarios.rutas", "app.whatsapp.rutas", "app.main",
 ]
 
 

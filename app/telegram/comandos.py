@@ -127,11 +127,12 @@ def ejecutar_comando(texto: str) -> str:
     return funcion(argumento)
 
 
-def generar_respuesta(texto: str, usuario: Optional[int] = None) -> str:
+def generar_respuesta(texto: str, usuario: Optional[int | str] = None) -> str:
     """El 'cerebro' del bot: decide qué contestar a cada mensaje.
 
     - Si empieza con "/", es un comando.
     - Si no (o es /si, /no), es lenguaje natural: lo interpreta Gemini.
+    usuario: el id de Telegram, o "whatsapp:<número>" (para saber quién tiene que decir "sí").
     """
     texto = texto.strip()
     primera = texto.split(maxsplit=1)[0].lower().split("@")[0] if texto else ""
