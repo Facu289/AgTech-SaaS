@@ -24,12 +24,58 @@
   --ambar-fondo: #FFFBEB;
   --ambar-borde: #FDE68A;
   --verde-fondo: #ECFDF5;
+  --verde-borde: #A7F3D0;
+  --rojo-solido: #B91C1C;     /* fondo de botones peligrosos (texto blanco encima) */
+  --fondo-cartel: rgba(255, 255, 255, 0.92);  /* cartelito sobre el mapa */
+  /* Etiquetas de colores (pills): fondo y texto de cada color. */
+  --pill-fondo: #ECFDF5;      --pill-texto: #047857;
+  --pill-azul-fondo: #EFF6FF;    --pill-azul-texto: #1D4ED8;
+  --pill-verde-fondo: #F0FDF4;   --pill-verde-texto: #15803D;
+  --pill-violeta-fondo: #F5F3FF; --pill-violeta-texto: #6D28D9;
+  --pill-rosa-fondo: #FDF2F8;    --pill-rosa-texto: #BE185D;
+  --pill-gris-fondo: #F3F4F6;    --pill-gris-texto: #4B5563;
+  color-scheme: light;        /* controles del navegador (calendario, scroll) en claro */
   --radio: 8px;
   --radio-tarjeta: 12px;
   --ancho-menu: 240px;
   --ancho-menu-plegado: 68px;
   /* Fuente del sistema: en Windows es Segoe UI. No depende de internet. */
   --letra: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+}
+
+/* ---------- Modo oscuro ----------
+   js/tema.js pone data-tema="oscuro" en <html> (Ajustes > Apariencia).
+   Solo se cambian las VARIABLES: como todo el resto del CSS usa var(--...), se acomoda solo.
+   Regla para lo nuevo: nunca escribir colores fijos (#FFFFFF) fuera de las variables. */
+:root[data-tema="oscuro"] {
+  --acento: #0F9D6E;
+  --acento-hover: #12B07C;
+  --acento-suave: #10302A;
+  --acento-texto: #4ADE9F;
+  --fondo: #14171C;
+  --fondo-suave: #1C2027;
+  --texto: #E6E8EB;
+  --texto-suave: #9AA3AF;
+  --etiqueta: #CDD2D9;
+  --borde: #2A3039;
+  --borde-input: #3B424D;
+  --rojo: #F87171;
+  --rojo-fondo: #2C1517;
+  --rojo-borde: #5E2328;
+  --ambar: #FBBF24;
+  --ambar-fondo: #2A2111;
+  --ambar-borde: #5A4614;
+  --verde-fondo: #10291F;
+  --verde-borde: #1F5A43;
+  --rojo-solido: #DC2626;
+  --fondo-cartel: rgba(20, 23, 28, 0.92);
+  --pill-fondo: #10291F;         --pill-texto: #6EE7B7;
+  --pill-azul-fondo: #15233F;    --pill-azul-texto: #93C5FD;
+  --pill-verde-fondo: #0F2A1A;   --pill-verde-texto: #86EFAC;
+  --pill-violeta-fondo: #251A45; --pill-violeta-texto: #C4B5FD;
+  --pill-rosa-fondo: #3A1328;    --pill-rosa-texto: #F9A8D4;
+  --pill-gris-fondo: #232830;    --pill-gris-texto: #CDD2D9;
+  color-scheme: dark;            /* calendario, casillas y barras de scroll en oscuro */
 }
 
 * {
@@ -273,6 +319,7 @@ svg {
   gap: 2px;
 }
 
+.enlace-pie,
 .usuario-menu,
 .boton-salir {
   display: flex;
@@ -300,11 +347,29 @@ svg {
   width: 100%;
 }
 
+.enlace-pie {
+  color: var(--etiqueta);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.enlace-pie:hover {
+  background: var(--fondo-suave);
+  color: var(--texto);
+}
+
+.enlace-pie[aria-current="page"] {
+  background: var(--acento-suave);
+  color: var(--acento-texto);
+  font-weight: 600;
+}
+
 .boton-salir:hover {
   background: var(--rojo-fondo);
   color: var(--rojo);
 }
 
+.menu-plegado .enlace-pie,
 .menu-plegado .usuario-menu,
 .menu-plegado .boton-salir {
   justify-content: center;
@@ -581,8 +646,8 @@ details.multi[open] summary {
 }
 
 .boton-peligro {
-  background: var(--rojo);
-  border-color: var(--rojo);
+  background: var(--rojo-solido);
+  border-color: var(--rojo-solido);
 }
 
 /* Botones chiquitos dentro de las tablas */
@@ -764,17 +829,24 @@ td.numero {
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
-  background: #ECFDF5;
-  color: #047857;
+  background: var(--pill-fondo);
+  color: var(--pill-texto);
 }
 
-.pill.azul { background: #EFF6FF; color: #1D4ED8; }
-.pill.verde { background: #F0FDF4; color: #15803D; }
+.pill.azul { background: var(--pill-azul-fondo); color: var(--pill-azul-texto); }
+.pill.verde { background: var(--pill-verde-fondo); color: var(--pill-verde-texto); }
 .pill.ambar { background: var(--ambar-fondo); color: var(--ambar); }
-.pill.violeta { background: #F5F3FF; color: #6D28D9; }
-.pill.rosa { background: #FDF2F8; color: #BE185D; }
-.pill.gris { background: #F3F4F6; color: #4B5563; }
+.pill.violeta { background: var(--pill-violeta-fondo); color: var(--pill-violeta-texto); }
+.pill.rosa { background: var(--pill-rosa-fondo); color: var(--pill-rosa-texto); }
+.pill.gris { background: var(--pill-gris-fondo); color: var(--pill-gris-texto); }
 .pill.rojo { background: var(--rojo-fondo); color: var(--rojo); }
+
+/* Varias etiquetas juntas (ej: "Contraseña" y "Google"). */
+.grupo-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
 .detalle-pill {
   margin-left: 6px;
@@ -794,7 +866,7 @@ td.numero {
 .mensaje.ok {
   background: var(--verde-fondo);
   color: var(--acento-texto);
-  border: 1px solid #A7F3D0;
+  border: 1px solid var(--verde-borde);
 }
 
 .mensaje.error {
@@ -1009,6 +1081,7 @@ dialog.ventana {
   border-radius: var(--radio-tarjeta);
   padding: 0;
   box-shadow: 0 24px 64px rgba(17, 24, 39, 0.25);
+  background: var(--fondo);
   color: var(--texto);
 }
 
@@ -1028,6 +1101,47 @@ dialog.ventana form {
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* ---------- Ajustes: elegir el tema ---------- */
+.opciones-tema {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.opcion-tema {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--borde-input);
+  border-radius: var(--radio);
+  cursor: pointer;
+}
+
+.opcion-tema:hover {
+  background: var(--fondo-suave);
+}
+
+.opcion-tema:has(input:checked) {
+  border-color: var(--acento);
+  background: var(--acento-suave);
+}
+
+.opcion-tema input {
+  accent-color: var(--acento);
+  margin: 0;
+}
+
+.opcion-tema strong,
+.opcion-tema .chico {
+  display: block;
+}
+
+.opcion-tema-icono {
+  color: var(--acento-texto);
+  display: inline-flex;
 }
 
 /* ---------- Página de login ---------- */
@@ -1063,6 +1177,33 @@ dialog.ventana form {
 .login-caja .boton {
   justify-content: center;
   width: 100%;
+}
+
+.login-google {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* La rayita con la "o" entre los dos botones. */
+.separador {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 13px;
+}
+
+.separador::before,
+.separador::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--borde);
+}
+
+.boton-google {
+  text-decoration: none;
 }
 
 /* ---------- Pantallas medianas y celular ---------- */
@@ -1115,6 +1256,7 @@ dialog.ventana form {
   }
 
   .menu-plegado .grupo-nav a,
+  .menu-plegado .enlace-pie,
   .menu-plegado .usuario-menu,
   .menu-plegado .boton-salir {
     justify-content: flex-start;
@@ -1463,7 +1605,7 @@ dialog.ventana form {
   z-index: 1000;
   padding: 8px 12px;
   border-radius: var(--radio);
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--fondo-cartel);
   font-size: 13px;
   text-align: center;
 }
@@ -1607,6 +1749,12 @@ fieldset:disabled textarea {
   overflow-x: auto;
   font-size: 12px;
   color: #000000;
+  background: #FFFFFF;   /* Es "papel": blanca también en modo oscuro. */
+}
+
+:root[data-tema="oscuro"] .hoja-orden {
+  padding: 12px;
+  border-radius: var(--radio);
 }
 
 .hoja-titulo {

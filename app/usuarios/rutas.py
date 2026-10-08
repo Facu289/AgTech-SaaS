@@ -29,7 +29,12 @@ COOKIE = "agroapp_sesion"
 # así nadie puede colarse con trucos como "/web/css/../index.html".
 # /salud la usa Docker para saber si la app anda (no muestra datos).
 # /whatsapp la llama Meta: no tiene cookie, se protege con la firma (ver app/whatsapp/rutas.py).
-RUTAS_LIBRES = {"/login", "/logout", "/salud", "/whatsapp","/web/login.html", "/web/js/login.js", "/web/css/estilos.css"}
+# /auth/google/...: entrar con Google (ver app/usuarios/google.py). tema.js: modo oscuro del login.
+RUTAS_LIBRES = {
+    "/login", "/logout", "/salud", "/whatsapp",
+    "/auth/google/disponible", "/auth/google/inicio", "/auth/google/callback",
+    "/web/login.html", "/web/js/login.js", "/web/js/tema.js", "/web/css/estilos.css",
+}
 
 # Protección contra "probar contraseñas": después de 5 fallos seguidos para un mismo
 # usuario, se bloquea ese usuario por 15 minutos. (Vive en memoria: se reinicia con el backend).
@@ -73,7 +78,12 @@ def entrar(datos: DatosLogin, request: Request, response: Response):
         raise HTTPException(401, "Usuario o contraseña incorrectos.")
 
     _fallos.pop(clave, None)
-    token = usuarios_db.crear_sesion(usuario["id"])
+    poner_cookie_sesion(response, usuarios_db.crear_sesion(usuario["id"]), request)
+    return {"usuario": usuario["nombre"]}
+
+
+def poner_cookie_sesion(response: Response, token, request: Request):
+    """La cookie de sesión (la usan el login con contraseña y el de Google)."""
     response.set_cookie(
         COOKIE,
         token,
@@ -83,7 +93,6 @@ def entrar(datos: DatosLogin, request: Request, response: Response):
         secure=cookie_segura(request),
         path="/",
     )
-    return {"usuario": usuario["nombre"]}
 
 
 @router.post("/logout", status_code=204)
@@ -94,8 +103,9 @@ def salir(request: Request, response: Response):
 
 @router.get("/yo")
 def quien_soy(request: Request):
-    """El usuario que está usando la web (para mostrarlo en el menú)."""
-    return {"usuario": request.state.usuario["nombre"]}
+    """El usuario que está usando la web (para el menú; el rol decide si ve Ajustes > Usuarios)."""
+    usuario = request.state.usuario
+    return {"id": usuario["id"], "usuario": usuario["nombre"], "rol": usuario["rol"]}
 
 
 # ---------- El portero ----------

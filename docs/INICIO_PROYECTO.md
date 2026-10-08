@@ -85,8 +85,14 @@ Respondé en español (Argentina).
   órdenes como la planilla de pulverización, advertencia de stock, descuento al realizar, registro por lote
   ("1 al 12" se desarma), impresión. Lotes con campo. Migraciones 11 y 12.
 - **WhatsApp**: hecho y en main (`app/whatsapp/rutas.py`). Falta ponerlo en marcha en el NAS (ver F).
+- **Ajustes** (rama `claude/usuarios`, sale de main; migración 13; falta commit/OK para mergear):
+  - **Usuarios** (solo admins): crear desde la web, editar, rol admin / usuario, desactivar (le cierra la
+    sesión), poner contraseña nueva. Siempre queda un admin; nadie se quita el admin a sí mismo.
+  - **Entrar con Google**: botón en el login. Entra SOLO quien tenga su mail cargado en un usuario activo.
+    Hace falta crear el cliente OAuth en Google Cloud (pasos en la sección E) y las variables `GOOGLE_*`.
+  - **Modo oscuro**: Claro / Oscuro / Automático, se guarda en cada celular o PC (`web/js/tema.js`).
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
-- **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 12** (lotes, cultivos, campañas, órdenes y campo), backup diario y
+- **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 12** en main (la **13**, usuarios con mail y rol, está en `claude/usuarios`), backup diario y
   antes de cada migración.
 - **Tests**: 216 pasan (`python -m pytest`) con lo del NAS, Lotes, importar KMZ, órdenes, campo y WhatsApp.
 - **Preparado para el NAS** (rama `claude/project-thread-pfy3gt`, sale de `claude/login`):
@@ -127,9 +133,21 @@ En la historia de Git no hay ningún `.env` ni base. En el NAS se baja con una d
 5. Arrancar en el NAS y probar web y bot.
 6. **No volver a prender el bot en la PC**: dos bots con el mismo token a la vez chocan.
 
-### E. Login en la web ✅ (hecho en la rama `claude/login`)
-Falta: mergear a main, poner `AGROAPP_BOT_TOKEN` en el `.env` y crear tu usuario.
+### E. Login en la web ✅ (en main) · Ajustes, Google y modo oscuro ✅ (rama `claude/usuarios`)
 Al publicarla con HTTPS: `AGROAPP_COOKIE_SEGURA=1` (o uvicorn con `--proxy-headers`).
+
+**Entrar con Google — crear el cliente OAuth** (una sola vez, en https://console.cloud.google.com):
+1. Crear un proyecto (ej. "AgroApp").
+2. *APIs y servicios > Pantalla de consentimiento de OAuth*: tipo **Externo**, nombre "AgroApp", tu mail
+   de soporte. Alcances: solo `openid` y `email`. Mientras esté "En prueba", agregá en *Usuarios de prueba*
+   los mails que van a entrar (o publicala: con solo `openid`/`email` no pide verificación de Google).
+3. *APIs y servicios > Credenciales > Crear credenciales > ID de cliente de OAuth*, tipo **Aplicación web**.
+   *URI de redireccionamiento autorizados* (las dos):
+   - `https://agro.grindnode.uk/auth/google/callback`
+   - `http://127.0.0.1:8000/auth/google/callback` (para probar en la PC)
+4. Copiar el **ID de cliente** y el **secreto** al `.env` (PC y NAS): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+   En el NAS además: `GOOGLE_REDIRECT_URI=https://agro.grindnode.uk/auth/google/callback`.
+5. En Ajustes > Usuarios, cargarle el mail de Google a cada usuario que vaya a entrar así.
 
 ### F. Bot de WhatsApp — código ✅, falta ponerlo en marcha
 Hecho: `GET /whatsapp` (verificación) y `POST /whatsapp` (firma X-Hub-Signature-256 con el App
@@ -166,7 +184,9 @@ Copia diaria de `datos/backups` a la nube (rclone u otro) y una prueba de restau
 - **Variables del `.env`**: `TELEGRAM_TOKEN`, `TELEGRAM_USUARIOS_AUTORIZADOS`,
   `GEMINI_API_KEY`, `GEMINI_MODEL` (por defecto `gemini-3.5-flash-lite`),
   `AGROAPP_BOT_TOKEN` (el bot entra a la API con esto) y `AGROAPP_COOKIE_SEGURA` (1 con HTTPS).
-- **Crear usuario de la web / cambiar contraseña**: `python -m app.usuarios.crear_usuario`
+- **Crear usuario de la web / cambiar contraseña**: desde **Ajustes > Usuarios** (admins), o por consola
+  `python -m app.usuarios.crear_usuario` (crea admins: sirve de "llave de emergencia").
+- **Entrar con Google**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` y, en el NAS, `GOOGLE_REDIRECT_URI`.
 - **Si aparece "Could not import module 'main'"**: se usó el comando viejo. Es
   `uvicorn app.main:app`.
 - **Después de cambiar la web**: Ctrl+F5 en el navegador.

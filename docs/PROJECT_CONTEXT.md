@@ -29,7 +29,8 @@ MISMA base: lo que se carga en una se ve en la otra.
 - Backup manual: `python -m app.nucleo.backup`
 - Mudar la base a otra máquina: `python -m app.nucleo.mudanza preparar` / `verificar <archivo>`
 - NAS (Docker): `docker compose up -d --build` · guía completa en `docs/NAS_INSTALAR.md`
-- Crear usuario de la web (o cambiarle la contraseña): `python -m app.usuarios.crear_usuario`
+- Crear usuario de la web (o cambiarle la contraseña): Ajustes > Usuarios (admins) o
+  `python -m app.usuarios.crear_usuario` (por consola crea admins)
 
 ## Tecnologías
 - Python + FastAPI + Pydantic (backend y API)
@@ -38,6 +39,9 @@ MISMA base: lo que se carga en una se ve en la otra.
 - Frontend: **HTML + CSS + JavaScript puro** con `fetch()`, servido por FastAPI (`/web`).
   Diseño "claro minimalista": blanco, grises y acento verde #0F9D6E; fuente del sistema
   (funciona sin internet); menú izquierdo plegable. React más adelante.
+  **Modo oscuro**: `web/js/tema.js` (en el `<head>` de cada página, antes del CSS) pone
+  `data-tema="oscuro"` en `<html>`; en `estilos.css` solo se redefinen las VARIABLES. No escribir colores
+  fijos fuera de `:root` (si no, no cambian en oscuro). La hoja de la orden queda blanca (es "papel").
 - **Mapa de lotes**: Leaflet 1.9.4 + Leaflet-Geoman 2.20.2 (dibujar/editar polígonos) desde el CDN
   unpkg con `integrity` (huella SHA-384); fondo satelital Esri World Imagery (sin clave). Necesita internet.
 - openpyxl para exportar a Excel. Gemini (Google) para entender mensajes en lenguaje natural.
@@ -55,7 +59,8 @@ agroapp/
 │   ├── lotes/     db.py · rutas.py · geometria.py (validar el polígono y calcular hectáreas). También cultivos,
 │   │              campañas y cultivo por lote. importar.py: leer KMZ/KML/GeoJSON y armar KML. Sin Telegram todavía
 │   ├── ordenes/   órdenes de trabajo: db.py (descuento de stock) · rutas.py (desarmar "1 al 12", registro por lote)
-│   ├── usuarios/  login: db.py (hash y sesiones) · rutas.py (/login, /logout, /yo y el portero) · crear_usuario.py
+│   ├── usuarios/  login: db.py (hash, sesiones, usuarios y reglas) · rutas.py (/login, /logout, /yo y el portero)
+│   │              gestion.py (/usuarios, solo admin) · google.py (/auth/google/...) · crear_usuario.py
 │   └── telegram/  comandos.py (reparte mensajes) · lenguaje_natural.py (Gemini) · notas.py
 ├── bot/bot.py   ← cartero Telegram ↔ backend
 ├── web/         ← páginas .html · css/estilos.css · js/ (comun.js + uno por página)
@@ -75,7 +80,13 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
 - **Login**: un middleware en `main.py` (el "portero", `usuarios/rutas.py: revisar_pedido`) revisa
   CADA pedido. Sin cookie de sesión válida: las páginas van a `/web/login.html` (303) y la API
   responde 401 (la web, en `comun.js`, manda al login). Libres solo: `/login`, `/logout`,
-  `login.html`, `login.js` y `estilos.css` (rutas EXACTAS, para que "../" no cuele nada).
+  `login.html`, `login.js`, `tema.js`, `estilos.css` y `/auth/google/...` (rutas EXACTAS, para que "../"
+  no cuele nada). **Roles**: `admin` gestiona usuarios (`/usuarios` → 403 si no es admin, lo controla el
+  servidor con la dependencia `solo_admin`); `usuario` usa todo lo demás.
+- **Entrar con Google** (`usuarios/google.py`): OAuth "authorization code" con `state` y PKCE, sin librerías
+  nuevas (`requests`). `state` + verificador en una cookie HttpOnly de 10 min (path `/auth/google`). Se canjea
+  el code directo con Google y se revisa el id_token (aud, iss, exp, email_verified). Entra SOLO si el mail es
+  de un usuario activo; si no, vuelve a `login.html?error=...`.
   El bot manda `Authorization: Bearer <AGROAPP_BOT_TOKEN>` y con eso solo puede usar `POST /mensaje`.
 - **WhatsApp** (`app/whatsapp/rutas.py`): Meta AVISA cada mensaje con un POST (webhook), así que el
   cartero vive dentro del backend (no hay un programa aparte como bot/bot.py). `/whatsapp` está en
@@ -147,6 +158,10 @@ Navegador ─► /web (web/) ─fetch─► app/main.py ─► <área>/rutas.py
 - `usuarios` (migración 8): nombre (UNIQUE NOCASE), hash_contrasena ("scrypt$N$r$p$sal$huella"),
   activo. `sesiones`: hash_token (sha256 del token de la cookie, nunca el token), usuario_id,
   expira_en (30 días). Cambiar la contraseña cierra las sesiones de ese usuario.
+  Migración 13: `email` (vacío = sin Google; único entre los que lo tienen), `rol` ('admin'/'usuario'; los
+  que había pasaron a admin), `ultimo_ingreso`. `hash_contrasena` vacío = solo entra con Google.
+  Reglas: siempre queda un admin activo; nadie se quita el admin ni se desactiva a sí mismo; desactivar
+  cierra sus sesiones.
 - `lotes` (migración 9; la 12 la reconstruyó): campo (establecimiento, opcional: "LM", "SR Oeste"), nombre,
   UNIQUE (campo, nombre) sin mayúsculas: el "1" puede repetirse en cada campo. geometria (polígono GeoJSON como TEXTO, puede ser NULL),
   hectareas (las del dibujo, o escritas a mano), observaciones, archivado, creado_en, actualizado_en.
@@ -207,7 +222,11 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - Login: sesión en la base + cookie (no JWT): se puede cerrar desde el servidor y es simple.
   Hash con scrypt de la librería estándar (sin dependencias nuevas). Cookie HttpOnly, SameSite=Lax,
   Secure con HTTPS (o `AGROAPP_COOKIE_SEGURA=1` detrás de un proxy). 5 intentos fallidos → 15 min
-  de bloqueo para ese usuario. Usuarios solo por consola (no hay "registrarse" en la web).
+  de bloqueo para ese usuario. No hay "registrarse": los usuarios los crea un admin (Ajustes) o la consola.
+- Google: no se crean cuentas solas (Google dice QUIÉN es; la app decide si PUEDE entrar). Sin librerías
+  nuevas. El id_token no se valida con la firma porque llega directo de Google por HTTPS a cambio del secreto.
+- Modo oscuro guardado en cada dispositivo (localStorage), no en la base: es una preferencia de pantalla.
+  Por defecto "Claro" (se ve como siempre hasta que lo cambiás).
 - NAS con Docker Compose (no instalar Python en el NAS). Una sola imagen para api y bot; la base y
   los backups en un volumen (`/srv/agroapp/datos` → `/app/datos`), nunca dentro de la imagen.
   Un solo proceso de uvicorn (SQLite y lo pendiente de "sí" viven en memoria). Contenedores con el
@@ -297,8 +316,9 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - MENOR: la búsqueda de insumos/máquinas/animales filtra en Python (ok para cientos).
 - MENOR: `insumos.creado_en` en UTC (el resto en hora local).
 - MENOR: borrar un evento de un animal no deshace su cambio de estado (se corrige editando).
-- MENOR: en las ventanas, Enter = Cancelar (el primer botón del form). Habría que poner
-  type="button" al Cancelar o mover Guardar primero.
+- MENOR: en las ventanas, Enter = Cancelar (el primer botón del form). Arreglado en Ajustes con
+  type="button" en el Cancelar; falta en las demás páginas (mismo cambio, una línea por ventana).
+- MENOR: en el menú del celular, con Ajustes abajo, la lista de secciones tiene que scrollear para ver Ganadería.
 - MENOR: los grupos no tienen historial de altas/bajas de cabezas: la cantidad se edita a mano.
 - MENOR: lo pendiente de confirmar por Telegram vive en memoria (se pierde si se reinicia el backend).
 - IMPORTANTE: el Cloudflare Tunnel publica toda la app, no solo `/whatsapp` (la protege el login).
@@ -323,6 +343,7 @@ Lotes en mapa (rama `claude/lotes`, migraciones 9 y 10): página Lotes con saté
 polígonos, hectáreas automáticas o a mano, cultivos con color, campañas, cultivo por lote (primera y segunda),
 ficha del lote y mapa en Inicio.
 Bot de WhatsApp hecho (webhook `/whatsapp`, mismos comandos que Telegram): falta ponerlo en marcha en el NAS.
+Ajustes (rama `claude/usuarios`, migración 13): gestión de usuarios para admins, entrar con Google y modo oscuro.
 **Siguiente**: WhatsApp en el NAS (variables, webhook en Meta) → migrar de Telegram a WhatsApp →
 cerrar el túnel a solo `/whatsapp`.
 El detalle está en `docs/INICIO_PROYECTO.md`.

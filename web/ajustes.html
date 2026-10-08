@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajustes · AgroApp</title>
+  <script src="js/tema.js"></script>
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body data-pagina="ajustes">
+  <main>
+    <div class="seccion-encabezado">
+      <div>
+        <h1>Ajustes</h1>
+        <p class="subtitulo">Apariencia de la web y usuarios que pueden entrar.</p>
+      </div>
+    </div>
+
+    <!-- Apariencia: la ve todo el mundo. Se guarda en ESTE celular o PC. -->
+    <section class="tarjeta" aria-labelledby="t-apariencia">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="luna"></div>
+        <h2 id="t-apariencia">Apariencia</h2>
+      </div>
+      <div class="opciones-tema" role="radiogroup" aria-labelledby="t-apariencia" id="opciones-tema">
+        <label class="opcion-tema">
+          <input type="radio" name="tema" value="claro">
+          <span class="opcion-tema-icono" data-icono="sol"></span>
+          <span><strong>Claro</strong><span class="suave chico">Fondo blanco</span></span>
+        </label>
+        <label class="opcion-tema">
+          <input type="radio" name="tema" value="oscuro">
+          <span class="opcion-tema-icono" data-icono="luna"></span>
+          <span><strong>Oscuro</strong><span class="suave chico">Descansa la vista de noche</span></span>
+        </label>
+        <label class="opcion-tema">
+          <input type="radio" name="tema" value="auto">
+          <span class="opcion-tema-icono" data-icono="pantalla"></span>
+          <span><strong>Automático</strong><span class="suave chico">Igual que el celular o la PC</span></span>
+        </label>
+      </div>
+      <p class="ayuda">Se guarda en este dispositivo: en cada celular o PC podés elegir uno distinto.</p>
+    </section>
+
+    <!-- Usuarios: solo para admins (el servidor también lo controla). -->
+    <section class="tarjeta" aria-labelledby="t-usuarios" id="seccion-usuarios" hidden>
+      <div class="seccion-encabezado">
+        <div class="tarjeta-titulo">
+          <div class="icono-caja" data-icono="persona"></div>
+          <h2 id="t-usuarios">Usuarios</h2>
+        </div>
+        <div class="acciones">
+          <button class="boton" type="button" id="boton-nuevo-usuario" data-icono="mas">Nuevo usuario</button>
+        </div>
+      </div>
+      <p class="ayuda" id="ayuda-google"></p>
+      <div class="contenedor-tabla">
+        <table>
+          <thead>
+            <tr><th>Usuario</th><th>Mail de Google</th><th>Rol</th><th>Entra con</th><th>Último ingreso</th><th>Estado</th><th><span hidden>Acciones</span></th></tr>
+          </thead>
+          <tbody id="cuerpo-usuarios"></tbody>
+        </table>
+      </div>
+    </section>
+    <p class="suave chico" id="aviso-no-admin" hidden>La gestión de usuarios es solo para administradores.</p>
+  </main>
+
+  <!-- Crear / editar usuario -->
+  <dialog class="ventana" id="ventana-usuario" aria-labelledby="t-usuario">
+    <form method="dialog" id="form-usuario">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="persona"></div>
+        <h2 id="t-usuario">Nuevo usuario</h2>
+      </div>
+      <div class="campos" style="--columnas: 1fr 1fr">
+        <label class="campo"><span>Nombre de usuario</span>
+          <input name="nombre" required maxlength="50" autocomplete="off" autocapitalize="none"></label>
+        <label class="campo"><span>Rol</span>
+          <select name="rol">
+            <option value="usuario">Usuario (usa la app)</option>
+            <option value="admin">Admin (también gestiona usuarios)</option>
+          </select></label>
+        <label class="campo" style="grid-column: 1 / -1"><span>Mail de Google (opcional)</span>
+          <input name="email" type="email" maxlength="254" autocomplete="off" placeholder="Ej: juan@gmail.com"></label>
+        <label class="campo" style="grid-column: 1 / -1" data-solo-nuevo><span>Contraseña (opcional si entra con Google)</span>
+          <input name="contrasena" type="password" minlength="8" autocomplete="new-password"></label>
+        <label class="casilla" style="grid-column: 1 / -1" data-solo-editar>
+          <input type="checkbox" name="activo"> Activo (si lo desactivás, no puede entrar y se le cierra la sesión)</label>
+      </div>
+      <p class="ayuda" data-solo-nuevo>Con mail de Google, entra con el botón "Entrar con Google". Con contraseña, con usuario y contraseña. Puede tener las dos.</p>
+      <p class="mensaje" hidden></p>
+      <div class="ventana-pie">
+        <button class="boton boton-secundario" type="button" value="cancelar">Cancelar</button>
+        <button class="boton" type="submit" data-icono="check">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Poner contraseña nueva -->
+  <dialog class="ventana" id="ventana-contrasena" aria-labelledby="t-contrasena">
+    <form method="dialog" id="form-contrasena">
+      <div class="tarjeta-titulo">
+        <div class="icono-caja" data-icono="llave"></div>
+        <h2 id="t-contrasena">Contraseña nueva</h2>
+      </div>
+      <div class="campos" style="--columnas: 1fr 1fr">
+        <label class="campo"><span>Contraseña nueva</span>
+          <input name="contrasena" type="password" required minlength="8" autocomplete="new-password"></label>
+        <label class="campo"><span>Repetila</span>
+          <input name="repetida" type="password" required minlength="8" autocomplete="new-password"></label>
+      </div>
+      <p class="ayuda">Mínimo 8 caracteres. Se cierran las sesiones abiertas de ese usuario.</p>
+      <p class="mensaje" hidden></p>
+      <div class="ventana-pie">
+        <button class="boton boton-secundario" type="button" value="cancelar">Cancelar</button>
+        <button class="boton" type="submit" data-icono="check">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/comun.js"></script>
+  <script src="js/ajustes.js"></script>
+</body>
+</html>

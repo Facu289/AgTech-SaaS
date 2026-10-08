@@ -82,7 +82,7 @@ def test_entrar_con_la_contrasena_correcta_da_una_cookie_segura(cliente_anonimo,
     assert "samesite=lax" in cookie
     assert "secure" not in cookie  # En la PC es http: con Secure el navegador no la guardaría.
     # Con la cookie ya se puede usar la web y la API.
-    assert cliente_anonimo.get("/yo").json() == {"usuario": "Facu"}
+    assert cliente_anonimo.get("/yo").json() == {"id": 1, "usuario": "Facu", "rol": "admin"}  # El primero es admin.
     assert cliente_anonimo.get("/insumos").status_code == 200
     assert cliente_anonimo.get("/web/").status_code == 200
 
