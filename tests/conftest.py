@@ -17,7 +17,7 @@ MODULOS = [
     "app.nucleo.database", "app.nucleo.backup",
     "app.insumos.db", "app.maquinaria.db", "app.ganaderia.db", "app.lotes.db", "app.ordenes.db",
     "app.insumos.rutas", "app.maquinaria.rutas", "app.ganaderia.rutas", "app.lotes.rutas", "app.ordenes.rutas",
-    "app.alertas", "app.exportar",
+    "app.alertas", "app.exportar", "app.actividad",
     "app.telegram.notas", "app.insumos.telegram", "app.maquinaria.telegram", "app.ganaderia.telegram",
     "app.telegram.lenguaje_natural", "app.telegram.comandos",
     "app.usuarios.db", "app.usuarios.rutas", "app.main",

@@ -49,7 +49,7 @@ MISMA base: lo que se carga en una se ve en la otra.
 El árbol completo y "¿dónde toco para...?" están en el **README.md** de la raíz. Resumen:
 ```
 agroapp/
-├── app/         ← backend. main.py + alertas.py + exportar.py
+├── app/         ← backend. main.py + alertas.py + exportar.py + actividad.py ("última actividad" del Inicio)
 │   ├── nucleo/    database (conexión, migraciones), backup, opciones, tipos, utilidades
 │   ├── insumos/ maquinaria/ ganaderia/   cada una: db.py (SQL) · rutas.py (API) · telegram.py (bot)
 │   ├── lotes/     db.py · rutas.py · geometria.py (validar el polígono y calcular hectáreas). También cultivos,
@@ -236,6 +236,15 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
   (las del mapa). Sin campo en la orden, solo vincula si hay UN lote con ese nombre.
 - La orden se imprime con la forma de la planilla (la "Vista de impresión" al pie es lo único que sale al
   imprimir; A4 horizontal).
+
+- Inicio (tablero): números principales, mapa general (campaña elegida), accesos rápidos, última orden de
+  trabajo, "última actividad" y "requiere atención" (máximo 6; lo demás en cada sección). "Última actividad"
+  (`GET /actividad`) junta órdenes, movimientos de stock hechos a mano, trabajos y services, eventos de animales
+  y cultivos de lotes, ordenados por cuándo se cargaron. Cuando exista el módulo Actividades, se suma ahí.
+- Barra lateral por grupos: Inicio · Agricultura (Lotes, Órdenes, Cultivos y campañas) · Stock · Maquinaria ·
+  Ganadería · Agenda (Contactos). Abajo: Descargar todo (Excel), usuario y Salir. Se arma en `MENU` (comun.js).
+- `/alertas` trae `ordenes_pendientes` (con los productos que faltan): contador del menú, "requiere atención"
+  (las que no tienen stock) y `/alertas` de Telegram.
 
 ## Lecciones aprendidas (errores que ya nos pasaron)
 - No abrir `agroapp.db` en VS Code: se corrompe.

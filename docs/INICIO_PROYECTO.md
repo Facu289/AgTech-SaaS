@@ -84,11 +84,13 @@ Respondé en español (Argentina).
 - **Órdenes de trabajo + campo en los lotes** (rama `claude/ordenes`, sale de main; falta el OK para commit):
   órdenes como la planilla de pulverización, advertencia de stock, descuento al realizar, registro por lote
   ("1 al 12" se desarma), impresión. Lotes con campo. Migraciones 11 y 12.
+- **Inicio y barra lateral nuevos** (rama `claude/dashboard`, sale de main; falta el OK para commit): mapa
+  general, última orden, última actividad, accesos rápidos; menú por grupos con Agricultura primero.
 - **WhatsApp**: programado en la rama `claude/whatsapp` (carpeta `agroapp-whatsapp`), sin commit todavía.
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
 - **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 12** (lotes, cultivos, campañas, órdenes y campo), backup diario y
   antes de cada migración.
-- **Tests**: 189 pasan (`python -m pytest`) con lo del NAS, Lotes, importar KMZ, órdenes y campo.
+- **Tests**: 194 pasan (`python -m pytest`) con lo del NAS, Lotes, importar KMZ, órdenes, campo y el Inicio.
 - **Preparado para el NAS** (rama `claude/project-thread-pfy3gt`, sale de `claude/login`):
   `Dockerfile`, `docker-compose.yml` (api + bot), `GET /salud` con healthcheck, backup diario
   aunque la app no se reinicie, rutas y zona horaria desde el `.env` y el script de mudanza
