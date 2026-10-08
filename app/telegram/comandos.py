@@ -32,6 +32,10 @@ def comando_alertas(argumento: str) -> str:
     if alertas["partos"]:
         lineas.append("\n🍼 Partos")
         lineas += ["  " + linea for linea in ganaderia_tg.lineas_partos(alertas["partos"])]
+    sin_stock = [o for o in alertas["ordenes_pendientes"] if o["faltantes"]]
+    if sin_stock:
+        lineas.append("\n🧪 Órdenes de trabajo sin stock suficiente")
+        lineas += [f"  OT {o['numero'] or o['id']}: falta {', '.join(o['faltantes'])}" for o in sin_stock]
     if len(lineas) == 1:
         return "🔔 No hay alertas. Todo en orden. 👌"
     return "\n".join(lineas)

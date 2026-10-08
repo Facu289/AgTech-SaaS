@@ -84,6 +84,8 @@ Respondé en español (Argentina).
 - **Órdenes de trabajo + campo en los lotes** (rama `claude/ordenes`, sale de main; falta el OK para commit):
   órdenes como la planilla de pulverización, advertencia de stock, descuento al realizar, registro por lote
   ("1 al 12" se desarma), impresión. Lotes con campo. Migraciones 11 y 12.
+- **Inicio y barra lateral nuevos** (en main): mapa general, última orden, última actividad, accesos rápidos;
+  menú por grupos con Agricultura primero.
 - **WhatsApp**: hecho y en main (`app/whatsapp/rutas.py`). Falta ponerlo en marcha en el NAS (ver F).
 - **Ajustes** (rama `claude/usuarios`, sale de main; migración 13; falta commit/OK para mergear):
   - **Usuarios** (solo admins): crear desde la web, editar, rol admin / usuario, desactivar (le cierra la
@@ -94,7 +96,7 @@ Respondé en español (Argentina).
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
 - **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 12** en main (la **13**, usuarios con mail y rol, está en `claude/usuarios`), backup diario y
   antes de cada migración.
-- **Tests**: 216 pasan (`python -m pytest`) con lo del NAS, Lotes, importar KMZ, órdenes, campo y WhatsApp.
+- **Tests**: 221 pasan (`python -m pytest`) con lo del NAS, Lotes, importar KMZ, órdenes, campo, WhatsApp y el Inicio.
 - **Preparado para el NAS** (rama `claude/project-thread-pfy3gt`, sale de `claude/login`):
   `Dockerfile`, `docker-compose.yml` (api + bot), `GET /salud` con healthcheck, backup diario
   aunque la app no se reinicie, rutas y zona horaria desde el `.env` y el script de mudanza

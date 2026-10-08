@@ -1744,6 +1744,122 @@ fieldset:disabled textarea {
   color: var(--texto);
 }
 
+/* ---------- Inicio (tablero) ---------- */
+/* Fila principal: mapa grande a la izquierda; accesos y última orden a la derecha. */
+.inicio-principal {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+  gap: 24px;
+  /* stretch: el mapa ocupa todo el alto de la columna de la derecha (sin hueco abajo). */
+  align-items: stretch;
+}
+
+.tarjeta-mapa .mapa.mapa-inicio {
+  flex: 1;
+}
+
+.columna-inicio {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.inicio-principal .mapa.mapa-inicio {
+  height: auto;
+  min-height: 420px;
+}
+
+.columna-inicio .accesos {
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.columna-inicio .acceso {
+  font-size: 13px;
+  padding: 10px 12px;
+}
+
+.acceso.deshabilitado {
+  color: var(--texto-suave);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.acceso.deshabilitado svg {
+  color: var(--texto-suave);
+}
+
+.ultima-orden {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ultima-orden-cabeza {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+}
+
+.ultima-orden-productos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+}
+
+.ultima-orden-productos li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+/* Listas del Inicio más compactas. */
+.lista-atencion.compacta li,
+#ultima-actividad li {
+  padding: 8px 0;
+}
+
+.enlace-sin-linea {
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.enlace-sin-linea:hover {
+  color: var(--acento-texto);
+}
+
+/* "Descargar todo (Excel)" en el pie del menú: mismo formato que Salir, pero verde. */
+a.boton-salir {
+  text-decoration: none;
+  font-size: 14px;
+}
+
+a.boton-salir:hover {
+  background: var(--acento-suave);
+  color: var(--acento-texto);
+}
+
+@media (max-width: 1200px) {
+  .inicio-principal {
+    grid-template-columns: 1fr;
+  }
+
+  .inicio-principal .mapa.mapa-inicio {
+    min-height: 340px;
+  }
+}
+
+@media (max-width: 600px) {
+  .columna-inicio .accesos {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* La hoja de la orden, con la forma de la planilla (se ve al pie y es lo único que se imprime). */
 .hoja-orden {
   overflow-x: auto;

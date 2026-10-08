@@ -69,6 +69,12 @@
 - [ ] Importar Shapefile (.shp en .zip: John Deere Operations Center, monitores)
 - [x] Campo (establecimiento) en los lotes: nombre único por campo, filtro, carpeta del KML = campo (migración 12)
 
+## ✅ Organización de la web
+- [x] Barra lateral por grupos (Agricultura primero) y "Descargar todo" abajo
+- [x] Inicio nuevo: mapa general, última orden, última actividad, accesos rápidos, requiere atención compacto
+- [x] Alerta de órdenes pendientes sin stock (Inicio, menú y Telegram)
+- [ ] Ordenar el código (carpetas, nombres, archivos grandes) — al final
+
 ## 🚧 Órdenes de trabajo
 - [x] Cargar a mano como la planilla (pulverización terrestre, dron...): encabezado, lotes, caldo, productos
       con dosis/ha o total (calcula el otro, por tancada y el agua) — migración 11

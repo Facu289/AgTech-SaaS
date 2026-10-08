@@ -472,16 +472,26 @@ function leerFiltrosDeUrl(formulario) {
 
 // ---------- Estructura de la página ----------
 
+// La barra lateral: grupos en el orden en que más se usan (primero el campo).
+// "contador" = cuántos hay para revisar (sale de GET /alertas).
 const MENU = [
   {
     titulo: "General",
     enlaces: [{ pagina: "inicio", texto: "Inicio", href: "index.html", icono: "casa" }],
   },
   {
+    titulo: "Agricultura",
+    enlaces: [
+      { pagina: "lotes", texto: "Lotes", href: "lotes.html", icono: "mapa" },
+      { pagina: "ordenes", texto: "Órdenes de trabajo", href: "ordenes.html", icono: "orden", contador: "ordenes_pendientes" },
+      { pagina: "cultivos", texto: "Cultivos y campañas", href: "cultivos.html", icono: "hoja" },
+    ],
+  },
+  {
     titulo: "Stock",
     enlaces: [
-      { pagina: "insumos", texto: "Insumos", href: "insumos.html", icono: "caja", contador: "stock_bajo", hoja: "insumos" },
       { pagina: "quimicos", texto: "Químicos", href: "quimicos.html", icono: "quimico", contador: "stock_bajo", hoja: "quimicos" },
+      { pagina: "insumos", texto: "Insumos", href: "insumos.html", icono: "caja", contador: "stock_bajo", hoja: "insumos" },
       { pagina: "repuestos", texto: "Repuestos", href: "repuestos.html", icono: "engranaje", contador: "stock_bajo", hoja: "repuestos" },
       { pagina: "movimientos", texto: "Movimientos", href: "movimientos.html", icono: "flechas" },
     ],
@@ -489,26 +499,21 @@ const MENU = [
   {
     titulo: "Maquinaria",
     enlaces: [
-      { pagina: "maquinas", texto: "Maquinaria", href: "maquinas.html", icono: "tractor", contador: "services" },
+      { pagina: "maquinas", texto: "Máquinas", href: "maquinas.html", icono: "tractor", contador: "services" },
       { pagina: "vencimientos", texto: "Vencimientos", href: "vencimientos.html", icono: "calendario", contador: "vencimientos" },
-      { pagina: "contactos", texto: "Contactos", href: "contactos.html", icono: "persona" },
-    ],
-  },
-  {
-    titulo: "Agricultura",
-    enlaces: [
-      { pagina: "lotes", texto: "Lotes", href: "lotes.html", icono: "mapa" },
-      { pagina: "ordenes", texto: "Órdenes de trabajo", href: "ordenes.html", icono: "orden" },
-      { pagina: "cultivos", texto: "Cultivos", href: "cultivos.html", icono: "hoja" },
     ],
   },
   {
     titulo: "Ganadería",
     enlaces: [
       { pagina: "animales", texto: "Animales", href: "animales.html", icono: "vaca", contador: "partos" },
-      { pagina: "crias", texto: "Crías", href: "crias.html", icono: "hoja" },
+      { pagina: "crias", texto: "Crías", href: "crias.html", icono: "historial" },
       { pagina: "especies", texto: "Especies", href: "especies.html", icono: "lista" },
     ],
+  },
+  {
+    titulo: "Agenda",
+    enlaces: [{ pagina: "contactos", texto: "Contactos", href: "contactos.html", icono: "persona" }],
   },
 ];
 
@@ -618,7 +623,11 @@ function crearPieMenu() {
       usuario.title = `Usuario: ${datos.usuario}`;
     })
     .catch(() => {});
-  return el("div", { className: "pie-menu" }, ajustes, usuario, salir);
+  // "Descargar todo": un Excel con todas las tablas (antes estaba en el Inicio).
+  const excel = el("a", { className: "boton-salir", href: "/exportar/completo", title: "Descargar todo (Excel, una hoja por tabla)" });
+  excel.innerHTML = icono("descarga", 18);
+  excel.append(el("span", { className: "texto-nav" }, "Descargar todo (Excel)"));
+  return el("div", { className: "pie-menu" }, excel, ajustes, usuario, salir);
 }
 
 // Muestra en la barra lateral cuántos vencimientos y partos están cerca.

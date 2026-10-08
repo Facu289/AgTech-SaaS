@@ -18,31 +18,69 @@
         <p class="subtitulo" id="fecha-hoy"></p>
       </div>
       <div class="acciones">
-        <a class="boton boton-secundario" href="/exportar/completo" id="boton-todo" data-icono="descarga"
-           title="Un Excel con todas las tablas, una hoja por tabla">Descargar todo (Excel)</a>
+        <a class="boton" href="orden.html" data-icono="orden">Nueva orden de trabajo</a>
       </div>
     </div>
 
     <!-- Números principales: cada uno lleva a su sección -->
     <div class="resumen" id="resumen"></div>
 
-    <!-- Los lotes en el mapa, pintados por cultivo de la campaña -->
-    <section class="tarjeta" aria-labelledby="t-lotes">
-      <div class="seccion-encabezado">
-        <div class="tarjeta-titulo">
-          <div class="icono-caja" data-icono="mapa"></div>
-          <h2 id="t-lotes">Lotes</h2>
-          <span class="suave chico" id="campania-inicio"></span>
+    <div class="inicio-principal">
+      <!-- Mapa general: los lotes pintados por cultivo de la campaña -->
+      <section class="tarjeta tarjeta-mapa" aria-labelledby="t-lotes">
+        <div class="seccion-encabezado">
+          <div class="tarjeta-titulo">
+            <div class="icono-caja" data-icono="mapa"></div>
+            <h2 id="t-lotes">Mapa general</h2>
+            <span class="suave chico" id="campania-inicio"></span>
+          </div>
+          <a class="chico fuerte" href="lotes.html">Ver mapa completo</a>
         </div>
-        <a class="chico fuerte" href="lotes.html">Ver mapa completo</a>
-      </div>
-      <div class="inicio-mapa">
         <div id="mapa-inicio" class="mapa mapa-inicio" aria-label="Mapa de los lotes"></div>
         <div id="leyenda-inicio"></div>
+      </section>
+
+      <div class="columna-inicio">
+        <!-- Accesos rápidos: lo que se hace todos los días, a un toque -->
+        <section class="tarjeta" aria-labelledby="t-accesos">
+          <div class="tarjeta-titulo">
+            <div class="icono-caja" data-icono="flechas"></div>
+            <h2 id="t-accesos">Accesos rápidos</h2>
+          </div>
+          <div class="accesos">
+            <a class="acceso" href="orden.html" data-icono="orden" title="Nueva orden de trabajo">Nueva orden</a>
+            <a class="acceso" href="quimicos.html#form-movimiento" data-icono="flechas" title="Entrada o salida de stock">Entrada / salida</a>
+            <a class="acceso" href="lotes.html" data-icono="mapa" title="Dibujar un lote o importar un KMZ">Lote / KMZ</a>
+            <a class="acceso" href="maquinas.html" data-icono="llave" title="Cargar horas o un service de una máquina">Horas / service</a>
+            <a class="acceso" href="animales.html#form-evento" data-icono="vaca" title="Parto, tacto, sanidad...">Evento animal</a>
+            <span class="acceso deshabilitado" data-icono="hoja" title="Se habilita cuando hagamos el módulo de actividades">Actividad <small>(pronto)</small></span>
+          </div>
+        </section>
+
+        <!-- La orden de trabajo más reciente -->
+        <section class="tarjeta" aria-labelledby="t-orden">
+          <div class="seccion-encabezado">
+            <div class="tarjeta-titulo">
+              <div class="icono-caja" data-icono="orden"></div>
+              <h2 id="t-orden">Última orden de trabajo</h2>
+            </div>
+            <a class="chico fuerte" href="ordenes.html">Ver todas</a>
+          </div>
+          <div id="ultima-orden"></div>
+        </section>
       </div>
-    </section>
+    </div>
 
     <div class="inicio-grilla">
+      <!-- Lo último que se cargó en la app -->
+      <section class="tarjeta" aria-labelledby="t-actividad">
+        <div class="tarjeta-titulo">
+          <div class="icono-caja" data-icono="historial"></div>
+          <h2 id="t-actividad">Última actividad</h2>
+        </div>
+        <ul class="lista-atencion" id="ultima-actividad"></ul>
+      </section>
+
       <!-- Lo que requiere atención -->
       <section class="tarjeta" aria-labelledby="t-atencion">
         <div class="seccion-encabezado">
@@ -52,36 +90,8 @@
           </div>
           <span class="suave chico" id="estado">Cargando…</span>
         </div>
-        <ul class="lista-atencion" id="lista-atencion"></ul>
+        <ul class="lista-atencion compacta" id="lista-atencion"></ul>
       </section>
-
-      <div style="display:flex;flex-direction:column;gap:24px">
-        <section class="tarjeta" aria-labelledby="t-accesos">
-          <div class="tarjeta-titulo">
-            <div class="icono-caja" data-icono="flechas"></div>
-            <h2 id="t-accesos">Accesos rápidos</h2>
-          </div>
-          <div class="accesos">
-            <a class="acceso" href="insumos.html#form-movimiento" data-icono="flechas">Entrada / salida de stock</a>
-            <a class="acceso" href="insumos.html#form-nuevo" data-icono="mas">Nuevo insumo</a>
-            <a class="acceso" href="maquinas.html" data-icono="llave">Registrar service</a>
-            <a class="acceso" href="animales.html#form-evento" data-icono="vaca">Evento de un animal</a>
-            <a class="acceso" href="vencimientos.html" data-icono="calendario">Vencimientos</a>
-            <a class="acceso" href="movimientos.html" data-icono="lista">Historial de stock</a>
-          </div>
-        </section>
-
-        <section class="tarjeta" aria-labelledby="t-ultimos">
-          <div class="seccion-encabezado">
-            <div class="tarjeta-titulo">
-              <div class="icono-caja" data-icono="historial"></div>
-              <h2 id="t-ultimos">Últimos movimientos</h2>
-            </div>
-            <a class="chico fuerte" href="movimientos.html">Ver todos</a>
-          </div>
-          <ul class="lista-atencion" id="ultimos-movimientos"></ul>
-        </section>
-      </div>
     </div>
   </main>
 
