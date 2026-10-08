@@ -34,6 +34,7 @@ from app.nucleo import backup, database, opciones
 from app.nucleo.utilidades import formatear_cantidad
 from app.telegram.comandos import generar_respuesta
 from app.usuarios import rutas as usuarios_rutas
+from app.whatsapp import rutas as whatsapp_rutas
 
 load_dotenv()  # Variables del .env (ej: AGROAPP_BOT_TOKEN).
 
@@ -61,6 +62,7 @@ app.include_router(lotes_rutas.router)
 app.include_router(ordenes_rutas.router)
 app.include_router(exportar.router)
 app.include_router(usuarios_rutas.router)
+app.include_router(whatsapp_rutas.router)
 
 
 # ---------- Login ----------

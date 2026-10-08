@@ -28,7 +28,8 @@ COOKIE = "agroapp_sesion"
 # Lo único que se puede pedir sin haber entrado. Rutas EXACTAS (sin comodines):
 # así nadie puede colarse con trucos como "/web/css/../index.html".
 # /salud la usa Docker para saber si la app anda (no muestra datos).
-RUTAS_LIBRES = {"/login", "/logout", "/salud", "/web/login.html", "/web/js/login.js", "/web/css/estilos.css"}
+# /whatsapp la llama Meta: no tiene cookie, se protege con la firma (ver app/whatsapp/rutas.py).
+RUTAS_LIBRES = {"/login", "/logout", "/salud", "/whatsapp","/web/login.html", "/web/js/login.js", "/web/css/estilos.css"}
 
 # Protección contra "probar contraseñas": después de 5 fallos seguidos para un mismo
 # usuario, se bloquea ese usuario por 15 minutos. (Vive en memoria: se reinicia con el backend).

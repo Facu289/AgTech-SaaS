@@ -16,6 +16,22 @@ AGROAPP_BOT_TOKEN=
 # Cookie de sesión solo por HTTPS (opcional). Poné 1 cuando la web esté detrás de HTTPS (Cloudflare, etc.).
 AGROAPP_COOKIE_SEGURA=
 
+# ---------- WhatsApp (Meta WhatsApp Cloud API) ----------
+# Se sacan de developers.facebook.com -> tu app -> WhatsApp -> Configuración de la API.
+# Token de acceso PERMANENTE (de un usuario del sistema), no el temporal de 24 h.
+WHATSAPP_TOKEN=
+# Identificador del número de teléfono (Phone number ID), no el número en sí.
+WHATSAPP_PHONE_NUMBER_ID=
+# Clave secreta de la app (Configuración de la app -> Básica -> Clave secreta).
+# Sirve para comprobar que cada mensaje lo manda Meta de verdad (firma).
+WHATSAPP_APP_SECRET=
+# Inventá uno (como AGROAPP_BOT_TOKEN) y poné el MISMO en Meta al configurar el webhook.
+WHATSAPP_VERIFY_TOKEN=
+# Números que pueden usar el bot, separados por coma, con código de país. Ej: 5493511234567
+WHATSAPP_USUARIOS_AUTORIZADOS=
+# Versión de la Graph API (opcional). Si Meta la da de baja, cambiala acá.
+# WHATSAPP_GRAPH_VERSION=v26.0
+
 # ---------- Rutas (opcional) ----------
 # En la PC no hace falta poner nada: la base va en datos/agroapp.db y los backups en datos/backups.
 # En Docker NO las uses: las pone docker-compose.yml (adentro del contenedor).
