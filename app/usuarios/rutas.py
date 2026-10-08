@@ -29,7 +29,11 @@ COOKIE = "agroapp_sesion"
 # así nadie puede colarse con trucos como "/web/css/../index.html".
 # /salud la usa Docker para saber si la app anda (no muestra datos).
 # /whatsapp la llama Meta: no tiene cookie, se protege con la firma (ver app/whatsapp/rutas.py).
-RUTAS_LIBRES = {"/login", "/logout", "/salud", "/whatsapp","/web/login.html", "/web/js/login.js", "/web/css/estilos.css"}
+# /privacidad y /eliminar-datos: la política de privacidad, que Meta exige que sea pública.
+RUTAS_LIBRES = {
+    "/login", "/logout", "/salud", "/whatsapp", "/privacidad", "/eliminar-datos",
+    "/web/login.html", "/web/js/login.js", "/web/css/estilos.css", "/web/img/logo.png", "/web/img/favicon.png",
+}
 
 # Protección contra "probar contraseñas": después de 5 fallos seguidos para un mismo
 # usuario, se bloquea ese usuario por 15 minutos. (Vive en memoria: se reinicia con el backend).

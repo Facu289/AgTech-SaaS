@@ -311,7 +311,9 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - MENOR: los grupos no tienen historial de altas/bajas de cabezas: la cantidad se edita a mano.
 - MENOR: lo pendiente de confirmar por Telegram vive en memoria (se pierde si se reinicia el backend).
 - IMPORTANTE: el Cloudflare Tunnel publica toda la app, no solo `/whatsapp` (la protege el login).
-  Restringirlo a `/whatsapp` o sumar Cloudflare Access + `AGROAPP_COOKIE_SEGURA=1`.
+  Restringirlo o sumar Cloudflare Access + `AGROAPP_COOKIE_SEGURA=1`. Meta entra SIN login a
+  `/whatsapp`, `/privacidad`, `/eliminar-datos` y `/web/img/logo.png`: esas cuatro tienen que quedar
+  abiertas (bypass) en cualquier regla que se ponga.
 - FUTURA: WhatsApp no puede escribir primero (ej. alertas a la mañana) si pasaron 24 h sin mensajes
   del usuario: hace falta una plantilla aprobada por Meta. Hoy el bot solo contesta.
 - MENOR: la carpeta `app/telegram/` ahora la usa también WhatsApp: renombrarla (ej. `app/bot/`) cuando
@@ -332,6 +334,7 @@ Lotes en mapa (rama `claude/lotes`, migraciones 9 y 10): página Lotes con saté
 polígonos, hectáreas automáticas o a mano, cultivos con color, campañas, cultivo por lote (primera y segunda),
 ficha del lote y mapa en Inicio.
 Bot de WhatsApp hecho (webhook `/whatsapp`, mismos comandos que Telegram): falta ponerlo en marcha en el NAS.
-**Siguiente**: WhatsApp en el NAS (variables, webhook en Meta) → migrar de Telegram a WhatsApp →
-cerrar el túnel a solo `/whatsapp`.
+WhatsApp ya está en el NAS con el webhook verificado; política de privacidad pública lista.
+**Siguiente**: publicar la app en Meta (sin publicar, Meta no manda mensajes reales) → probar →
+migrar de Telegram a WhatsApp → cerrar el túnel a las rutas públicas.
 El detalle está en `docs/INICIO_PROYECTO.md`.

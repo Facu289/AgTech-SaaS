@@ -138,14 +138,18 @@ Hecho: `GET /whatsapp` (verificación) y `POST /whatsapp` (firma X-Hub-Signature
 Secret), mismos comandos, Gemini y "sí" que Telegram, números autorizados, tests.
 Cuenta de Meta lista (WABA 2291926221567276, Phone number ID 1390060194181902) y Cloudflare Tunnel
 andando en `https://agro.grindnode.uk`.
+Ya hecho en el NAS (08/10/2026): las 5 variables `WHATSAPP_...` en el `.env` (con
+`sudo -u agroapp nano .env`), webhook verificado en Meta y "messages" suscripto.
+Meta solo manda mensajes reales con la app **publicada**. Para publicarla pide política de privacidad:
+está en `https://agro.grindnode.uk/privacidad` (y `/eliminar-datos`), página pública con el logo.
 Falta, en orden:
-1. Poner las 5 variables `WHATSAPP_...` (ver `ejemplo_env.txt`) en el `.env` del NAS, a mano con
-   `nano` (NO copiar el `.env` de la PC entero: pisa el bloque Docker/NAS).
-2. En el NAS: `git pull && docker compose up -d --build`.
-3. En Meta: webhook `https://agro.grindnode.uk/whatsapp`, el mismo verify token del `.env`,
-   suscribir el campo "messages". Probar con `/ayuda` desde el celu.
+1. En el NAS: `git pull && sudo docker compose up -d --build` (trae la página de privacidad).
+2. En Meta → Configuración de la app → Básica: URL de privacidad, URL de eliminación de datos,
+   categoría e ícono (`web/img/logo.png`). Publicar la app.
+3. Probar con `/ayuda` desde el celu. Si no contesta: `sudo docker compose logs --tail 30 api`.
 4. Telegram y WhatsApp conviven unas semanas; después se apaga el servicio `bot` (Telegram).
-5. Seguridad: que el túnel publique SOLO `/whatsapp` (hoy publica toda la app).
+5. Seguridad: que el túnel publique SOLO `/whatsapp`, `/privacidad`, `/eliminar-datos` y
+   `/web/img/logo.png` (hoy publica toda la app).
 
 ### G. Backups fuera del NAS
 Copia diaria de `datos/backups` a la nube (rclone u otro) y una prueba de restaurar.
