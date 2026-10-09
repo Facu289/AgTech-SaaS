@@ -68,7 +68,9 @@ def test_migracion_12_conserva_los_lotes_y_sus_cultivos(tmp_path, monkeypatch):
 
     monkeypatch.setenv("AGROAPP_DB", str(tmp_path / "vieja.db"))
     importlib.reload(database)
-    database.crear_tablas()  # Base nueva hasta la última versión...
+    # Solo hasta la 12 (las migraciones que vienen después no son parte de esta prueba).
+    monkeypatch.setattr(database, "MIGRACIONES", database.MIGRACIONES[:12])
+    database.crear_tablas()  # Base nueva hasta la versión 12...
     with database.conectar() as conexion:
         conexion.execute("PRAGMA foreign_keys = OFF")
         # ...y la "volvemos" a la versión 11: la tabla lotes como era antes (nombre único, sin campo).

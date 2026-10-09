@@ -97,6 +97,10 @@
 - [x] Login en la web: usuario y contraseña (hash scrypt), sesión con cookie (HttpOnly, SameSite=Lax,
       Secure con HTTPS), página de login y botón Salir, toda la web y la API protegidas, el bot entra
       con su token (AGROAPP_BOT_TOKEN), usuarios por consola (`python -m app.usuarios.crear_usuario`), migración 8
+- [x] Ajustes (rama `claude/usuarios`, migración 13): gestión de usuarios para admins (crear, editar, rol
+      admin/usuario, desactivar, contraseña nueva), entrar con Google (solo mails cargados) y modo oscuro
+      (Claro / Oscuro / Automático, guardado en cada dispositivo)
+- [ ] Google en producción: crear el cliente OAuth en Google Cloud y cargar GOOGLE_* en el .env del NAS
 - [x] Bot de WhatsApp (Meta Cloud API): webhook `/whatsapp` con firma, mismos comandos y Gemini que Telegram
 - [x] WhatsApp en el NAS: variables en el .env, webhook verificado en Meta
 - [x] Política de privacidad pública (`/privacidad`, `/eliminar-datos`) y logo como ícono de la web

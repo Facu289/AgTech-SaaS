@@ -474,6 +474,18 @@ MIGRACIONES = [
         "ALTER TABLE lotes_nueva RENAME TO lotes",
         "CREATE UNIQUE INDEX idx_lotes_campo_nombre ON lotes(campo COLLATE NOCASE, nombre COLLATE NOCASE)",
     ],
+    # 13) Gestión de usuarios: mail (para entrar con Google), rol y último ingreso.
+    #    - rol: 'admin' (puede crear y editar usuarios) o 'usuario'. Los que ya existían
+    #      pasan a admin (hasta hoy los creaba solo el dueño, por consola).
+    #    - email: vacío = sin Google. Único entre los que lo tienen (índice "parcial").
+    #    - hash_contrasena vacío = solo entra con Google (una huella vacía nunca coincide).
+    [
+        "ALTER TABLE usuarios ADD COLUMN email TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE usuarios ADD COLUMN rol TEXT NOT NULL DEFAULT 'usuario' CHECK (rol IN ('admin', 'usuario'))",
+        "ALTER TABLE usuarios ADD COLUMN ultimo_ingreso TEXT",
+        "UPDATE usuarios SET rol = 'admin'",
+        "CREATE UNIQUE INDEX idx_usuarios_email ON usuarios(email COLLATE NOCASE) WHERE email <> ''",
+    ],
 ]
 
 

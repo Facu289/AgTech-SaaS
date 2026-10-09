@@ -33,6 +33,8 @@ from app.maquinaria import rutas as maquinaria_rutas
 from app.nucleo import backup, database, opciones
 from app.nucleo.utilidades import formatear_cantidad
 from app.telegram.comandos import generar_respuesta
+from app.usuarios import gestion as usuarios_gestion
+from app.usuarios import google as usuarios_google
 from app.usuarios import rutas as usuarios_rutas
 from app.whatsapp import rutas as whatsapp_rutas
 
@@ -63,6 +65,8 @@ app.include_router(ordenes_rutas.router)
 app.include_router(exportar.router)
 app.include_router(actividad.router)
 app.include_router(usuarios_rutas.router)
+app.include_router(usuarios_gestion.router)
+app.include_router(usuarios_google.router)
 app.include_router(whatsapp_rutas.router)
 app.include_router(privacidad.router)
 

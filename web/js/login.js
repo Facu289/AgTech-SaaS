@@ -13,6 +13,29 @@ document.querySelector("#logo-icono").innerHTML =
   'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/>' +
   '<path d="M12 11C12 7 9 4.5 4.5 4.5 4.5 9 7.5 11 12 11Z"/><path d="M12 13c0-3.5 2.6-6 7.5-6 0 4.5-3 6-7.5 6Z"/></svg>';
 
+// Si volvimos de Google sin poder entrar, el servidor nos manda acá con ?error=...
+const ERRORES_GOOGLE = {
+  "google-no-autorizado": "Esa cuenta de Google no tiene acceso. Pedile a un admin que cargue tu mail en Ajustes > Usuarios.",
+  "google-cancelado": "Se canceló el ingreso con Google.",
+  "google-invalido": "El ingreso con Google venció o no es válido. Probá de nuevo.",
+  "google-fallo": "Google no pudo confirmar tu cuenta. Probá de nuevo en un rato.",
+  "google-no-configurado": "Entrar con Google no está configurado.",
+};
+const errorGoogle = new URLSearchParams(location.search).get("error");
+if (errorGoogle) {
+  mensaje.textContent = `⚠️ ${ERRORES_GOOGLE[errorGoogle] || "No se pudo entrar."}`;
+  mensaje.hidden = false;
+  history.replaceState(null, "", location.pathname); // Que al recargar no vuelva a aparecer.
+}
+
+// El botón de Google solo aparece si el servidor lo tiene configurado.
+fetch("/auth/google/disponible")
+  .then((respuesta) => respuesta.json())
+  .then((datos) => {
+    document.querySelector("#login-google").hidden = !datos.disponible;
+  })
+  .catch(() => {});
+
 formulario.addEventListener("submit", async (evento) => {
   evento.preventDefault();
   mensaje.hidden = true;

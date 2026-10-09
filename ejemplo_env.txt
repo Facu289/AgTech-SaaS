@@ -16,6 +16,16 @@ AGROAPP_BOT_TOKEN=
 # Cookie de sesión solo por HTTPS (opcional). Poné 1 cuando la web esté detrás de HTTPS (Cloudflare, etc.).
 AGROAPP_COOKIE_SEGURA=
 
+# ---------- Entrar con Google (opcional) ----------
+# Si faltan, el botón "Entrar con Google" no aparece. Se sacan de Google Cloud Console:
+# APIs y servicios > Credenciales > Crear credenciales > ID de cliente de OAuth > Aplicación web.
+# Solo entran los mails cargados en Ajustes > Usuarios (no se crean cuentas solas).
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# Dirección de vuelta de Google. En la PC se deja vacía (se arma sola: http://127.0.0.1:8000/auth/google/callback).
+# En el NAS: https://agro.grindnode.uk/auth/google/callback (tiene que ser IGUAL a la cargada en Google).
+GOOGLE_REDIRECT_URI=
+
 # ---------- WhatsApp (Meta WhatsApp Cloud API) ----------
 # Se sacan de developers.facebook.com -> tu app -> WhatsApp -> Configuración de la API.
 # Token de acceso PERMANENTE (de un usuario del sistema), no el temporal de 24 h.

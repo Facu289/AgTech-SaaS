@@ -24,12 +24,13 @@ def main():
         print("❌ Las contraseñas no coinciden. No se guardó nada.")
         return
     try:
-        resultado = usuarios_db.guardar_usuario(nombre, contrasena)
+        # Por consola se crean admins: es la puerta de emergencia si nadie puede entrar a Ajustes.
+        resultado = usuarios_db.guardar_usuario(nombre, contrasena, rol="admin")
     except usuarios_db.DatoInvalido as error:
         print(f"❌ {error}")
         return
     if resultado == "creado":
-        print(f"✅ Usuario '{nombre}' creado. Ya podés entrar en la web.")
+        print(f"✅ Usuario '{nombre}' creado (admin). Ya podés entrar en la web.")
     else:
         print(f"✅ Contraseña de '{nombre}' cambiada. Se cerraron sus sesiones abiertas.")
 

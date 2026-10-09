@@ -46,7 +46,7 @@ agroapp/
 │   ├── ganaderia/          ┘
 │   ├── lotes/              lotes en el mapa, cultivos y campañas: db.py · rutas.py · geometria.py (hectáreas)
 │   ├── ordenes/            órdenes de trabajo: db.py (descuento de stock) · rutas.py
-│   ├── usuarios/           login: contraseñas (hash), sesiones, /login, /logout y el "portero"
+│   ├── usuarios/           login: contraseñas (hash), sesiones, el "portero", gestión (Ajustes) y Google
 │   └── telegram/           el cerebro del bot
 │       ├── comandos.py       reparte cada mensaje al comando que corresponde
 │       ├── lenguaje_natural.py  Gemini: texto libre → comandos (con confirmación)
