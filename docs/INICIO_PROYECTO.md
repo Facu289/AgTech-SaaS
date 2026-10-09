@@ -93,6 +93,9 @@ Respondé en español (Argentina).
   - **Entrar con Google**: botón en el login. Entra SOLO quien tenga su mail cargado en un usuario activo.
     Hace falta crear el cliente OAuth en Google Cloud (pasos en la sección E) y las variables `GOOGLE_*`.
   - **Modo oscuro**: Claro / Oscuro / Automático, se guarda en cada celular o PC (`web/js/tema.js`).
+  - **Menú de tu cuenta** (rama `claude/ajustes-menu`): tocás tu nombre abajo a la izquierda y salen Ajustes,
+    Descargar todo (Excel) y Salir. Además la web pide al navegador revisar si cambió cada archivo
+    (`Cache-Control: no-cache`): después de actualizar el NAS ya no hace falta Ctrl+F5.
 - **Telegram**: comandos con "/" y **lenguaje natural con Gemini** (pide "sí" antes de guardar).
 - **Base**: SQLite en `datos/agroapp.db`, migraciones hasta la **versión 12** en main (la **13**, usuarios con mail y rol, está en `claude/usuarios`), backup diario y
   antes de cada migración.

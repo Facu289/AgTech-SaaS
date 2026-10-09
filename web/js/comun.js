@@ -597,19 +597,36 @@ function armarEstructura() {
   actualizarContadores();
 }
 
-// Abajo del menú: Ajustes, quién está usando la web y el botón "Salir".
+// Abajo del menú: un botón con TU nombre. Al tocarlo se abre un menú chico con
+// Ajustes, Descargar todo (Excel) y Salir (como en Gmail o en la mayoría de las apps).
 function crearPieMenu() {
   const enAjustes = document.body.dataset.pagina === "ajustes";
-  const ajustes = el("a", { className: "enlace-pie", href: "ajustes.html", title: "Ajustes", "aria-current": enAjustes ? "page" : null });
-  ajustes.innerHTML = icono("ajustes", 18);
-  ajustes.append(el("span", { className: "texto-nav" }, "Ajustes"));
 
+  // El botón: ícono de persona + nombre + flechita.
   const nombre = el("span", { className: "usuario-nombre texto-nav" });
-  const usuario = el("div", { className: "usuario-menu", title: "Usuario" }, el("span", { className: "usuario-icono" }), nombre);
-  usuario.firstChild.innerHTML = icono("persona", 18);
-  const salir = el("button", { className: "boton-salir", type: "button", title: "Salir", "aria-label": "Salir" });
+  const boton = el("button", {
+    className: "boton-usuario",
+    type: "button",
+    title: "Tu cuenta",
+    "aria-haspopup": "menu",
+    "aria-expanded": "false",
+    "aria-current": enAjustes ? "page" : null,
+  });
+  boton.innerHTML = icono("persona", 18);
+  boton.append(nombre);
+  boton.insertAdjacentHTML("beforeend", `<span class="flechita texto-nav">${icono("desplegar", 14)}</span>`);
+
+  // El menú que se abre (escondido hasta que tocás el botón).
+  const ajustes = el("a", { className: "opcion-usuario", href: "ajustes.html", role: "menuitem", "aria-current": enAjustes ? "page" : null });
+  ajustes.innerHTML = icono("ajustes", 18);
+  ajustes.append("Ajustes");
+  // "Descargar todo": un Excel con todas las tablas, una hoja por tabla.
+  const excel = el("a", { className: "opcion-usuario", href: "/exportar/completo", role: "menuitem" });
+  excel.innerHTML = icono("descarga", 18);
+  excel.append("Descargar todo (Excel)");
+  const salir = el("button", { className: "opcion-usuario peligro", type: "button", role: "menuitem" });
   salir.innerHTML = icono("salir", 18);
-  salir.append(el("span", { className: "texto-nav" }, "Salir"));
+  salir.append("Salir");
   salir.addEventListener("click", async () => {
     try {
       await fetch("/logout", { method: "POST" });
@@ -617,17 +634,37 @@ function crearPieMenu() {
       location.href = "login.html";
     }
   });
+  const quien = el("div", { className: "menu-usuario-quien" });
+  const menu = el("div", { className: "menu-usuario", role: "menu", hidden: true }, quien, ajustes, excel, salir);
+
+  const abrir = (abierto) => {
+    menu.hidden = !abierto;
+    boton.setAttribute("aria-expanded", String(abierto));
+    if (abierto) ajustes.focus();
+  };
+  boton.addEventListener("click", () => abrir(menu.hidden));
+  // Se cierra al tocar afuera, con Escape o al elegir una opción.
+  document.addEventListener("click", (evento) => {
+    if (!menu.hidden && !menu.contains(evento.target) && !boton.contains(evento.target)) abrir(false);
+  });
+  document.addEventListener("keydown", (evento) => {
+    if (evento.key === "Escape" && !menu.hidden) {
+      abrir(false);
+      boton.focus();
+    }
+  });
+  menu.addEventListener("click", (evento) => {
+    if (evento.target.closest(".opcion-usuario")) abrir(false);
+  });
+
   cargarYo()
     .then((datos) => {
       nombre.textContent = datos.usuario;
-      usuario.title = `Usuario: ${datos.usuario}`;
+      quien.textContent = datos.rol === "admin" ? `${datos.usuario} · admin` : datos.usuario;
+      boton.title = `${datos.usuario}: Ajustes, Excel y Salir`;
     })
     .catch(() => {});
-  // "Descargar todo": un Excel con todas las tablas (antes estaba en el Inicio).
-  const excel = el("a", { className: "boton-salir", href: "/exportar/completo", title: "Descargar todo (Excel, una hoja por tabla)" });
-  excel.innerHTML = icono("descarga", 18);
-  excel.append(el("span", { className: "texto-nav" }, "Descargar todo (Excel)"));
-  return el("div", { className: "pie-menu" }, excel, ajustes, usuario, salir);
+  return el("div", { className: "pie-menu" }, menu, boton);
 }
 
 // Muestra en la barra lateral cuántos vencimientos y partos están cerca.
