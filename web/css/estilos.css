@@ -310,70 +310,128 @@ svg {
   padding-top: 12px;
 }
 
-/* Pie del menú: usuario y botón Salir. */
+/* Pie del menú: el botón con tu nombre, que abre el menú de tu cuenta. */
 .pie-menu {
   border-top: 1px solid var(--borde);
   padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  position: relative;  /* El menú chico se ubica respecto de acá. */
 }
 
-.enlace-pie,
-.usuario-menu,
-.boton-salir {
+.boton-usuario {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 40px;
+  width: 100%;
+  min-height: 44px;
   padding: 0 10px;
-  border-radius: var(--radio);
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.usuario-menu {
-  color: var(--texto-suave);
-  font-size: 14px;
-}
-
-.boton-salir {
   border: none;
+  border-radius: var(--radio);
   background: none;
   color: var(--etiqueta);
   font-weight: 500;
-  cursor: pointer;
   text-align: left;
-  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
 }
 
-.enlace-pie {
-  color: var(--etiqueta);
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.enlace-pie:hover {
+.boton-usuario:hover,
+.boton-usuario[aria-expanded="true"] {
   background: var(--fondo-suave);
   color: var(--texto);
 }
 
-.enlace-pie[aria-current="page"] {
+.boton-usuario[aria-current="page"] {
   background: var(--acento-suave);
   color: var(--acento-texto);
-  font-weight: 600;
 }
 
-.boton-salir:hover {
+.boton-usuario .usuario-nombre {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* La flechita apunta hacia arriba: el menú se abre para arriba. */
+.boton-usuario .flechita {
+  display: inline-flex;
+  color: var(--texto-suave);
+  transform: rotate(-90deg);
+}
+
+.menu-usuario {
+  position: absolute;
+  left: 12px;
+  right: 12px;   /* Mismo ancho que la barra... */
+  bottom: calc(100% - 4px);
+  padding: 6px;
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 40;
+}
+
+.menu-usuario-quien {
+  padding: 6px 10px 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--borde);
+  color: var(--texto-suave);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.opcion-usuario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--radio);
+  background: none;
+  color: var(--etiqueta);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.opcion-usuario:hover,
+.opcion-usuario:focus-visible {
+  background: var(--fondo-suave);
+  color: var(--texto);
+}
+
+.opcion-usuario[aria-current="page"] {
+  color: var(--acento-texto);
+}
+
+.opcion-usuario.peligro:hover {
   background: var(--rojo-fondo);
   color: var(--rojo);
 }
 
-.menu-plegado .enlace-pie,
-.menu-plegado .usuario-menu,
-.menu-plegado .boton-salir {
+/* Menú plegado: solo el ícono de la persona (el menú chico sale igual, hacia la derecha). */
+.menu-plegado .boton-usuario {
   justify-content: center;
   padding: 0;
+}
+
+.menu-plegado .boton-usuario .flechita {
+  display: none;
+}
+
+.menu-plegado .menu-usuario {
+  left: 8px;
+  right: auto;   /* ...salvo con la barra plegada: ahí sale hacia la derecha. */
+  width: 236px;
 }
 
 /* Barra superior: solo en celular. */
@@ -1256,11 +1314,20 @@ dialog.ventana form {
   }
 
   .menu-plegado .grupo-nav a,
-  .menu-plegado .enlace-pie,
-  .menu-plegado .usuario-menu,
-  .menu-plegado .boton-salir {
+  .menu-plegado .boton-usuario {
     justify-content: flex-start;
     padding: 0 10px;
+  }
+
+  /* En celular el menú siempre está completo: la flechita y el menú chico, como desplegado. */
+  .menu-plegado .boton-usuario .flechita {
+    display: inline-flex;
+  }
+
+  .menu-plegado .menu-usuario {
+    left: 12px;
+    right: 12px;
+    width: auto;
   }
 
   .menu-plegado .menu-cabecera {
@@ -1830,17 +1897,6 @@ fieldset:disabled textarea {
 }
 
 .enlace-sin-linea:hover {
-  color: var(--acento-texto);
-}
-
-/* "Descargar todo (Excel)" en el pie del menú: mismo formato que Salir, pero verde. */
-a.boton-salir {
-  text-decoration: none;
-  font-size: 14px;
-}
-
-a.boton-salir:hover {
-  background: var(--acento-suave);
   color: var(--acento-texto);
 }
 

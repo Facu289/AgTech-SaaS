@@ -79,7 +79,14 @@ async def exigir_login(request: Request, call_next):
     corte = usuarios_rutas.revisar_pedido(request)
     if corte is not None:
         return corte
-    return await call_next(request)
+    respuesta = await call_next(request)
+    if request.url.path.startswith("/web"):
+        # "no-cache" NO es "no guardar": el navegador guarda la página, pero antes de usarla
+        # pregunta si cambió (si no cambió, el servidor contesta un 304 cortito, sin reenviarla).
+        # Sin esto, el navegador (o Cloudflare) adivinaba cuánto tiempo guardarla y, después de
+        # actualizar la app, seguía mostrando páginas VIEJAS (pasó con el modo oscuro).
+        respuesta.headers.setdefault("Cache-Control", "no-cache")
+    return respuesta
 
 
 # ---------- Errores ----------

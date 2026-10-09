@@ -39,6 +39,8 @@ MISMA base: lo que se carga en una se ve en la otra.
 - Frontend: **HTML + CSS + JavaScript puro** con `fetch()`, servido por FastAPI (`/web`).
   Diseño "claro minimalista": blanco, grises y acento verde #0F9D6E; fuente del sistema
   (funciona sin internet); menú izquierdo plegable. React más adelante.
+  **Pie del menú**: un botón con tu nombre que abre un menú chico con Ajustes, Descargar todo (Excel) y
+  Salir (se cierra tocando afuera o con Escape; con la barra plegada sale hacia la derecha).
   **Modo oscuro**: `web/js/tema.js` (en el `<head>` de cada página, antes del CSS) pone
   `data-tema="oscuro"` en `<html>`; en `estilos.css` solo se redefinen las VARIABLES. No escribir colores
   fijos fuera de `:root` (si no, no cambian en oscuro). La hoja de la orden queda blanca (es "papel").
@@ -277,6 +279,9 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
   (las que no tienen stock) y `/alertas` de Telegram.
 
 ## Lecciones aprendidas (errores que ya nos pasaron)
+- El modo oscuro "solo andaba en Ajustes": la web salía sin `Cache-Control` y el navegador (o Cloudflare) seguía
+  usando las páginas VIEJAS guardadas (sin tema.js); Ajustes era nueva y se bajaba fresca. Ahora todo `/web`
+  sale con `Cache-Control: no-cache` (revisa si cambió; si no, 304). Test: `tests/test_web.py`.
 - No abrir `agroapp.db` en VS Code: se corrompe.
 - `.venv\.gitignore` contiene `*`: no moverlo a la raíz.
 - Verificar que los archivos quedaron guardados/actualizados (`Select-String`).
@@ -327,7 +332,6 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - MENOR: borrar un evento de un animal no deshace su cambio de estado (se corrige editando).
 - MENOR: en las ventanas, Enter = Cancelar (el primer botón del form). Arreglado en Ajustes con
   type="button" en el Cancelar; falta en las demás páginas (mismo cambio, una línea por ventana).
-- MENOR: en el menú del celular, con Ajustes abajo, la lista de secciones tiene que scrollear para ver Ganadería.
 - MENOR: los grupos no tienen historial de altas/bajas de cabezas: la cantidad se edita a mano.
 - MENOR: lo pendiente de confirmar por Telegram vive en memoria (se pierde si se reinicia el backend).
 - IMPORTANTE: el Cloudflare Tunnel publica toda la app, no solo `/whatsapp` (la protege el login).
