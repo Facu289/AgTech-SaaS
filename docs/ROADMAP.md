@@ -104,11 +104,15 @@
 - [x] Bot de WhatsApp (Meta Cloud API): webhook `/whatsapp` con firma, mismos comandos y Gemini que Telegram
 - [x] WhatsApp en el NAS: variables en el .env, webhook verificado en Meta
 - [x] Política de privacidad pública (`/privacidad`, `/eliminar-datos`) y logo como ícono de la web
-- [ ] Publicar la app en Meta y probar desde el celu
+- [x] Publicar la app en Meta y probar desde el celu: **WhatsApp funciona** (09/10/2026, número de prueba)
+- [ ] Usuarios del bot (números de WhatsApp) desde la web, en vez de WHATSAPP_USUARIOS_AUTORIZADOS en el .env
+- [ ] Mejorar el bot de WhatsApp (por ahora hace lo mismo que Telegram)
+- [ ] Número propio para el bot (hoy: número de prueba de Meta, +1 555, máximo 5 destinatarios)
 - [ ] Migrar de Telegram a WhatsApp (convivir unas semanas y después apagar el bot de Telegram)
-- [ ] Cloudflare Tunnel: publicar SOLO `/whatsapp`, `/privacidad`, `/eliminar-datos` y el logo
-      (hoy publica toda la app, protegida por el login)
-- [ ] Backups fuera del NAS (nube)
+- [ ] Cloudflare Tunnel: decidir qué queda público (hoy toda la app, protegida por el login; Meta necesita
+      `/whatsapp`, `/privacidad`, `/eliminar-datos` y el logo; Google, `/auth/google/...`)
+- [x] Backups fuera del NAS: script `scripts/backup_nube.sh` + guía `docs/NAS_BACKUP_NUBE.md` (rclone + Drive)
+- [ ] Backups en la nube andando en el NAS (instalar rclone, cron) y una prueba de restaurar
 
 ## Después
 - [ ] Usar la app con datos reales durante unas semanas y anotar qué falta o molesta

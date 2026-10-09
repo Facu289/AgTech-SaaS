@@ -303,6 +303,20 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
 - Leaflet mide el mapa al arrancar: si después cambia de tamaño, quedan franjas grises. Se arregla con
   un ResizeObserver que llama a `mapa.invalidateSize()`. Y el contenedor del mapa necesita
   `position: relative; z-index: 0` para que sus capas no tapen el menú del celular.
+- **WhatsApp: qué revisar si el bot no contesta** (nos pasó TODO esto al ponerlo en marcha, 08-09/10/2026):
+  1. `sudo docker compose logs api | grep -i whatsapp`: ¿llega algún `POST /whatsapp`?
+  2. Si no llega nada: (a) la app de Meta tiene que estar **Publicada** (sin publicar, Meta solo manda
+     los mensajes de "Probar"; para publicar pide política de privacidad); (b) el campo **"messages"**
+     tiene que estar **Suscrito** en Campos del webhook (ahora está dentro de Casos de uso → WhatsApp →
+     Paso 2); (c) la app tiene que estar suscripta a la WABA: `POST /{WABA_ID}/subscribed_apps` con el
+     token (respuesta `{"success":true}`). El botón "Probar" de Meta sirve para separar problemas:
+     si con "Probar" llega y con el celu no, el problema es el número al que se escribe.
+  3. `403`: `WHATSAPP_APP_SECRET` no es la "Clave secreta de la app" (Configuración → Básica).
+  4. "rechazado el número 549...": ese número no coincide con `WHATSAPP_USUARIOS_AUTORIZADOS`.
+  5. Las variables del `.env` del NAS se leen al arrancar: después de cambiarlas,
+     `sudo docker compose up -d --force-recreate api`. Comandos largos con comillas se rompen al
+     pegarlos: mejor un bloque `python - <<'FIN' ... FIN`.
+- Un script `.sh` guardado con fin de línea CRLF (Windows) falla en Linux. `.gitattributes` fuerza LF en `*.sh`.
 
 ## Deuda técnica
 - MENOR: el servidor no revisa si un polígono se cruza sobre sí mismo ni si dos lotes se superponen.
@@ -320,7 +334,11 @@ consulta, responde directo. La IA nunca escribe en la base: solo propone comando
   (no va al login, porque es un link y no un fetch).
 - FUTURA: detrás de Cloudflare / HTTPS, uvicorn necesita `--proxy-headers` (o AGROAPP_COOKIE_SEGURA=1)
   para que la cookie salga con Secure.
-- FUTURA: backups solo en la misma máquina (en el NAS, falta la copia a la nube).
+- FUTURA: backups solo en la misma máquina hasta instalar `scripts/backup_nube.sh` en el NAS
+  (guía `docs/NAS_BACKUP_NUBE.md`). La nube nunca borra (`rclone copy`): crece ~1 archivo por día;
+  si algún día ocupa mucho, agregar limpieza de los más viejos.
+- MENOR: los números autorizados de WhatsApp están en el `.env` (hay que editarlo y reiniciar). Pasarlos
+  a la base y a Ajustes en la web. La normalización no entiende el "15" (`011 15 ...`).
 - MENOR: el bot no tiene healthcheck propio (no tiene HTTP): si se cuelga sin cerrarse, Docker no se
   entera. Se ve con `docker compose logs bot`.
 - MENOR: Dockerfile y docker-compose.yml no se pudieron probar en la PC (no tiene Docker): se
@@ -360,6 +378,8 @@ ficha del lote y mapa en Inicio.
 Bot de WhatsApp hecho (webhook `/whatsapp`, mismos comandos que Telegram): falta ponerlo en marcha en el NAS.
 WhatsApp ya está en el NAS con el webhook verificado; política de privacidad pública lista.
 Ajustes (rama `claude/usuarios`, migración 13): gestión de usuarios para admins, entrar con Google y modo oscuro.
-**Siguiente**: publicar la app en Meta (sin publicar, Meta no manda mensajes reales) → probar →
-migrar de Telegram a WhatsApp → cerrar el túnel a las rutas públicas.
+**WhatsApp funcionando** de punta a punta (09/10/2026), con el número de prueba de Meta.
+Backups a la nube: script y guía listos (`scripts/backup_nube.sh`, `docs/NAS_BACKUP_NUBE.md`).
+**Siguiente**: instalar los backups en la nube en el NAS y probar restaurar → usuarios del bot desde la
+web → mejorar el bot de WhatsApp → número propio → apagar Telegram.
 El detalle está en `docs/INICIO_PROYECTO.md`.

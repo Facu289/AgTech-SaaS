@@ -1,0 +1,3 @@
+# Los scripts de Linux (los corre el NAS) tienen que tener fin de línea LF, no CRLF de Windows:
+# con CRLF, "sh" falla con errores raros ("set: Illegal option -").
+*.sh text eol=lf

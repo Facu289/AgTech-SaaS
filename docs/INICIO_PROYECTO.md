@@ -154,26 +154,24 @@ Al publicarla con HTTPS: `AGROAPP_COOKIE_SEGURA=1` (o uvicorn con `--proxy-heade
    En el NAS además: `GOOGLE_REDIRECT_URI=https://agro.grindnode.uk/auth/google/callback`.
 5. En Ajustes > Usuarios, cargarle el mail de Google a cada usuario que vaya a entrar así.
 
-### F. Bot de WhatsApp — código ✅, falta ponerlo en marcha
-Hecho: `GET /whatsapp` (verificación) y `POST /whatsapp` (firma X-Hub-Signature-256 con el App
-Secret), mismos comandos, Gemini y "sí" que Telegram, números autorizados, tests.
-Cuenta de Meta lista (WABA 2291926221567276, Phone number ID 1390060194181902) y Cloudflare Tunnel
-andando en `https://agro.grindnode.uk`.
-Ya hecho en el NAS (08/10/2026): las 5 variables `WHATSAPP_...` en el `.env` (con
-`sudo -u agroapp nano .env`), webhook verificado en Meta y "messages" suscripto.
-Meta solo manda mensajes reales con la app **publicada**. Para publicarla pide política de privacidad:
-está en `https://agro.grindnode.uk/privacidad` (y `/eliminar-datos`), página pública con el logo.
-Falta, en orden:
-1. En el NAS: `git pull && sudo docker compose up -d --build` (trae la página de privacidad).
-2. En Meta → Configuración de la app → Básica: URL de privacidad, URL de eliminación de datos,
-   categoría e ícono (`web/img/logo.png`). Publicar la app.
-3. Probar con `/ayuda` desde el celu. Si no contesta: `sudo docker compose logs --tail 30 api`.
-4. Telegram y WhatsApp conviven unas semanas; después se apaga el servicio `bot` (Telegram).
-5. Seguridad: que el túnel publique SOLO `/whatsapp`, `/privacidad`, `/eliminar-datos` y
-   `/web/img/logo.png` (hoy publica toda la app).
+### F. Bot de WhatsApp ✅ funcionando (09/10/2026)
+`GET /whatsapp` (verificación) y `POST /whatsapp` (firma X-Hub-Signature-256 con el App Secret),
+mismos comandos, Gemini y "sí" que Telegram. App de Meta **BotAgro** (id 1755982148968163),
+publicada; WABA 2291926221567276, Phone number ID 1390060194181902 (número de **prueba** de Meta).
+Webhook: `https://agro.grindnode.uk/whatsapp`. Privacidad: `/privacidad` y `/eliminar-datos`.
+Si deja de contestar, ver "WhatsApp: qué revisar" en `PROJECT_CONTEXT.md` (lecciones).
+Sigue:
+1. Usuarios del bot desde la web (hoy: `WHATSAPP_USUARIOS_AUTORIZADOS` en el `.env` del NAS,
+   formato `549` + característica sin 0 + número sin 15, ej. `5491132903591`).
+2. Mejorar el bot (hoy hace lo mismo que Telegram).
+3. Número propio (Paso 2 de Meta: chip nuevo, método de pago, verificación del negocio).
+4. Telegram y WhatsApp conviven; después se apaga el servicio `bot` (Telegram).
+5. Túnel: decidir qué queda público (ver deuda técnica en `PROJECT_CONTEXT.md`).
 
-### G. Backups fuera del NAS
-Copia diaria de `datos/backups` a la nube (rclone u otro) y una prueba de restaurar.
+### G. Backups fuera del NAS — script listo, falta instalarlo en el NAS
+`scripts/backup_nube.sh` sube cada día `datos/backups` a Google Drive con rclone (cifrado opcional,
+recomendado). Paso a paso (instalar rclone, conectar Drive, cron 3:30 y **prueba de restaurar**):
+`docs/NAS_BACKUP_NUBE.md`.
 
 ### Ideas chicas pendientes (ROADMAP)
 - `/historial` por Telegram (mini desafío).
