@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgroApp · Política de privacidad</title>
+<link rel="icon" type="image/png" href="/web/img/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Colores de la marca AgroApp */
+  :root { --verde-campo: #1F5A3F; --brote: #7BC74D; --hoja: #A6DB6F; --tierra: #C98A3B; --crema: #F4F1E8; }
+  body { font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1f2a24;
+         background: var(--crema); margin: 0; line-height: 1.6; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; align-items: center; gap: 12px; }
+  header img { width: 48px; height: 48px; border-radius: 10px; }
+  .lema { color: var(--tierra); font-weight: 600; margin: 0; }
+  h1 { color: var(--verde-campo); font-size: 1.6rem; margin: 0; }
+  h2 { color: var(--verde-campo); font-size: 1.15rem; margin-top: 2rem;
+       border-bottom: 2px solid var(--hoja); padding-bottom: 4px; }
+  .fecha { color: #5f6b64; }
+  .contacto { background: #fff; border-left: 4px solid var(--brote); border-radius: 8px; padding: 12px 16px;
+              word-break: break-word; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  {{LOGO}}
+  <div>
+    <h1>AgroApp · Política de privacidad</h1>
+    <p class="lema">Tu campo, en tu mano.</p>
+  </div>
+</header>
+<p class="fecha">Última actualización: 8 de octubre de 2026</p>
+
+<p>AgroApp es una aplicación de <strong>uso interno</strong> de un establecimiento agropecuario en
+Argentina. Sirve para registrar stock de insumos, maquinaria y ganadería. No es un servicio abierto
+al público: solo la usan las personas del establecimiento que fueron autorizadas.</p>
+
+<h2>Qué datos usamos</h2>
+<ul>
+  <li><strong>Número de WhatsApp</strong> de las personas autorizadas: para saber quién escribe y
+      contestarle. Los números que no están autorizados no pueden usar la app.</li>
+  <li><strong>Texto de los mensajes</strong> que se le mandan al bot: se usa para registrar o consultar
+      datos del campo (por ejemplo, "salida de 20 litros de glifosato"). La app no guarda una copia de
+      los mensajes: guarda solo el dato que el mensaje registra (el movimiento de stock, las horas de
+      una máquina, un evento de un animal, una nota).</li>
+  <li><strong>Registros técnicos</strong> del servidor (fecha, hora y número que escribió), para
+      detectar errores. Se borran solos al rotar.</li>
+</ul>
+<p>No usamos los datos para publicidad, no hacemos perfiles y no los vendemos.</p>
+
+<h2>Dónde se guardan</h2>
+<p>En un <strong>servidor propio</strong> del establecimiento (no en servicios de terceros), con copias
+de seguridad en ese mismo servidor.</p>
+
+<h2>Con quién se comparten</h2>
+<ul>
+  <li><strong>Meta (WhatsApp)</strong>: es el canal por el que viajan los mensajes, según las
+      condiciones y la política de privacidad de WhatsApp.</li>
+  <li><strong>Google (Gemini)</strong>: cuando un mensaje se escribe en lenguaje natural (sin "/"),
+      su texto y los nombres de insumos, máquinas y animales cargados se envían a Gemini solo para
+      interpretarlo. Los comandos que empiezan con "/" no se envían a Google.</li>
+</ul>
+<p>No se comparten con nadie más.</p>
+
+<h2 id="eliminar-datos">Cómo pedir que se borren tus datos</h2>
+<p>Podés pedir en cualquier momento que se quite tu número de la lista de personas autorizadas y que
+se borren los datos asociados a tu número. Escribinos a:</p>
+<p class="contacto">{{CONTACTO}}</p>
+<p>Indicá tu número de WhatsApp. Respondemos dentro de los 30 días y te confirmamos cuando el
+borrado esté hecho. Los registros del campo que cargaste (stock, maquinaria, animales) son datos del
+establecimiento, no datos personales, y pueden conservarse sin tu número.</p>
+
+<h2>Cambios</h2>
+<p>Si esta política cambia, se actualiza en esta misma página con su fecha.</p>
+</main>
+</body>
+</html>

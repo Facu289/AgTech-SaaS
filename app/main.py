@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from app import actividad, exportar
+from app import actividad, exportar, privacidad
 from app.alertas import obtener_alertas
 from app.ganaderia import db as ganaderia_db
 from app.ganaderia import rutas as ganaderia_rutas
@@ -68,6 +68,7 @@ app.include_router(usuarios_rutas.router)
 app.include_router(usuarios_gestion.router)
 app.include_router(usuarios_google.router)
 app.include_router(whatsapp_rutas.router)
+app.include_router(privacidad.router)
 
 
 # ---------- Login ----------

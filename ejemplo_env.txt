@@ -41,6 +41,8 @@ WHATSAPP_VERIFY_TOKEN=
 WHATSAPP_USUARIOS_AUTORIZADOS=
 # Versión de la Graph API (opcional). Si Meta la da de baja, cambiala acá.
 # WHATSAPP_GRAPH_VERSION=v26.0
+# Contacto de la política de privacidad (/privacidad), opcional. Vacío = el mail que está en app/privacidad.py.
+AGROAPP_CONTACTO_PRIVACIDAD=
 
 # ---------- Rutas (opcional) ----------
 # En la PC no hace falta poner nada: la base va en datos/agroapp.db y los backups en datos/backups.

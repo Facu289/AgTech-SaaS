@@ -102,9 +102,12 @@
       (Claro / Oscuro / Automático, guardado en cada dispositivo)
 - [ ] Google en producción: crear el cliente OAuth en Google Cloud y cargar GOOGLE_* en el .env del NAS
 - [x] Bot de WhatsApp (Meta Cloud API): webhook `/whatsapp` con firma, mismos comandos y Gemini que Telegram
-- [ ] WhatsApp en el NAS: variables en el .env, webhook en Meta, probar desde el celu
+- [x] WhatsApp en el NAS: variables en el .env, webhook verificado en Meta
+- [x] Política de privacidad pública (`/privacidad`, `/eliminar-datos`) y logo como ícono de la web
+- [ ] Publicar la app en Meta y probar desde el celu
 - [ ] Migrar de Telegram a WhatsApp (convivir unas semanas y después apagar el bot de Telegram)
-- [ ] Cloudflare Tunnel: publicar SOLO `/whatsapp` (hoy publica toda la app, protegida por el login)
+- [ ] Cloudflare Tunnel: publicar SOLO `/whatsapp`, `/privacidad`, `/eliminar-datos` y el logo
+      (hoy publica toda la app, protegida por el login)
 - [ ] Backups fuera del NAS (nube)
 
 ## Después
